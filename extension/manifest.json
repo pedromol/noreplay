@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["content/navigator.js"],
+      "js": ["content/navigator.js", "content/progress.js"],
       "run_at": "document_idle"
     }
   ]

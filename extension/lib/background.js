@@ -1,5 +1,7 @@
 import { createCatalog } from "../storage/catalog.js";
 import { createNavigationController } from "./navigation.js";
+import { createProgressTracker } from "./progress.js";
+import { extractVideoId } from "./video.js";
 
 export const HISTORY_FILTER = {
   url: [{ hostEquals: "www.youtube.com" }, { hostEquals: "m.youtube.com" }],
@@ -7,6 +9,11 @@ export const HISTORY_FILTER = {
 
 export function createBackground({ browser, now = () => Date.now() } = {}) {
   const catalog = createCatalog(browser.storage.local);
+  const progress = createProgressTracker({
+    catalog,
+    storage: browser.storage.local,
+    now,
+  });
 
   const navigation = createNavigationController({
     onVideoChange({ tabId, videoId }) {
@@ -45,6 +52,17 @@ export function createBackground({ browser, now = () => Date.now() } = {}) {
       navigation.observe(tabId, url);
       return { videoId: navigation.current(tabId) };
     }
+    if (message && message.type === "playback") {
+      const url = await resolveTabUrl(tabId);
+      const videoId = extractVideoId(url);
+      if (!videoId) return undefined;
+      await progress.record({
+        videoId,
+        deltaSeconds: message.deltaSeconds,
+        durationSeconds: message.duration,
+      });
+      return undefined;
+    }
     return undefined;
   }
 
@@ -61,6 +79,7 @@ export function createBackground({ browser, now = () => Date.now() } = {}) {
   return {
     catalog,
     navigation,
+    progress,
     now,
     resolveTabUrl,
     onHistoryStateUpdated,
