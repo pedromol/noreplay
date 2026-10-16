@@ -25,6 +25,10 @@ func main() {
 func run() error {
 	addr := envOr("ADDR", ":8080")
 	dbPath := envOr("DATABASE_PATH", "./data/noreplay.db")
+	signupEmail := os.Getenv("SIGNUP_EMAIL")
+	if signupEmail == "" {
+		slog.Warn("signup disabled: SIGNUP_EMAIL is not set")
+	}
 
 	if dir := filepath.Dir(dbPath); dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -39,8 +43,11 @@ func run() error {
 	defer st.Close()
 
 	srv := &http.Server{
-		Addr:              addr,
-		Handler:           httpapi.NewRouter(st, httpapi.Options{}),
+		Addr: addr,
+		Handler: httpapi.NewRouter(st, httpapi.Options{
+			Store:       st,
+			SignupEmail: signupEmail,
+		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

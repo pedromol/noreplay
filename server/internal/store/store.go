@@ -21,7 +21,7 @@ import (
 var migrationFS embed.FS
 
 var (
-	ErrNotFound  = errors.New("store: not found")
+	ErrNotFound   = errors.New("store: not found")
 	ErrEmailTaken = errors.New("store: email already registered")
 )
 
@@ -183,27 +183,13 @@ func newID() (string, error) {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
 }
 
-func (s *Store) UpsertUser(ctx context.Context, email, passwordHash string) (User, error) {
+// CreateUser inserts a new account, normalizing the email first. It never
+// overwrites an existing account: a duplicate email returns ErrEmailTaken.
+func (s *Store) CreateUser(ctx context.Context, email, passwordHash string) (User, error) {
 	normalized := NormalizeEmail(email)
 	if normalized == "" {
 		return User{}, fmt.Errorf("store: email is empty")
 	}
-
-	var existingID string
-	var existingCreatedAt int64
-	err := s.db.QueryRowContext(ctx, `SELECT id, created_at FROM users WHERE email = ?`, normalized).
-		Scan(&existingID, &existingCreatedAt)
-	switch {
-	case err == nil:
-		if _, err := s.db.ExecContext(ctx, `UPDATE users SET password_hash = ? WHERE id = ?`, passwordHash, existingID); err != nil {
-			return User{}, fmt.Errorf("store: update user: %w", err)
-		}
-		return User{ID: existingID, Email: normalized, PasswordHash: passwordHash, CreatedAt: existingCreatedAt}, nil
-	case errors.Is(err, sql.ErrNoRows):
-	default:
-		return User{}, fmt.Errorf("store: lookup user by email: %w", err)
-	}
-
 	id, err := newID()
 	if err != nil {
 		return User{}, fmt.Errorf("store: generate user id: %w", err)
@@ -232,6 +218,21 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (User, error) 
 	}
 	if err != nil {
 		return User{}, fmt.Errorf("store: get user by email: %w", err)
+	}
+	return u, nil
+}
+
+func (s *Store) GetUserByID(ctx context.Context, userID string) (User, error) {
+	var u User
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, email, password_hash, created_at FROM users WHERE id = ?`,
+		userID,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, ErrNotFound
+	}
+	if err != nil {
+		return User{}, fmt.Errorf("store: get user by id: %w", err)
 	}
 	return u, nil
 }

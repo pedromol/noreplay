@@ -84,9 +84,9 @@ func migrationVersions(t *testing.T, db *sql.DB) []int64 {
 
 func mustCreateUser(t *testing.T, st *store.Store, email string) store.User {
 	t.Helper()
-	u, err := st.UpsertUser(context.Background(), email, "argon2id$fake$hash")
+	u, err := st.CreateUser(context.Background(), email, "argon2id$fake$hash")
 	if err != nil {
-		t.Fatalf("UpsertUser(%q): %v", email, err)
+		t.Fatalf("CreateUser(%q): %v", email, err)
 	}
 	return u
 }
@@ -149,9 +149,9 @@ func TestUserRoundTripPreservesFields(t *testing.T) {
 	st := openStore(t, tempDBPath(t))
 	ctx := context.Background()
 
-	created, err := st.UpsertUser(ctx, "  Ana@Example.COM ", "argon2id$fake$hash-1")
+	created, err := st.CreateUser(ctx, "  Ana@Example.COM ", "argon2id$fake$hash-1")
 	if err != nil {
-		t.Fatalf("UpsertUser: %v", err)
+		t.Fatalf("CreateUser: %v", err)
 	}
 	if created.Email != "ana@example.com" {
 		t.Errorf("created email = %q, want normalized %q", created.Email, "ana@example.com")
@@ -171,18 +171,15 @@ func TestUserRoundTripPreservesFields(t *testing.T) {
 		t.Errorf("GetUserByEmail returned %+v, want %+v", got, created)
 	}
 
-	updated, err := st.UpsertUser(ctx, "ana@example.com", "argon2id$fake$hash-2")
+	if _, err := st.CreateUser(ctx, "ana@example.com", "argon2id$fake$hash-2"); !errors.Is(err, store.ErrEmailTaken) {
+		t.Errorf("CreateUser(duplicate) error = %v, want ErrEmailTaken", err)
+	}
+	after, err := st.GetUserByEmail(ctx, "ana@example.com")
 	if err != nil {
-		t.Fatalf("UpsertUser (update): %v", err)
+		t.Fatalf("GetUserByEmail after duplicate attempt: %v", err)
 	}
-	if updated.ID != created.ID {
-		t.Errorf("upsert changed user ID: %q -> %q", created.ID, updated.ID)
-	}
-	if updated.CreatedAt != created.CreatedAt {
-		t.Errorf("upsert changed created_at: %d -> %d", created.CreatedAt, updated.CreatedAt)
-	}
-	if updated.PasswordHash != "argon2id$fake$hash-2" {
-		t.Errorf("password_hash after upsert = %q, want %q", updated.PasswordHash, "argon2id$fake$hash-2")
+	if after != created {
+		t.Errorf("duplicate CreateUser mutated the account: %+v, want %+v", after, created)
 	}
 
 	if _, err := st.GetUserByEmail(ctx, "missing@example.com"); !errors.Is(err, store.ErrNotFound) {
