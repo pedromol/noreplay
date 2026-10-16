@@ -41,5 +41,7 @@ func NewRouter(s *store.Store, opts Options) *http.ServeMux {
 	mux.HandleFunc("POST /v1/signup", srv.handleSignup)
 	mux.HandleFunc("POST /v1/login", srv.handleLogin)
 	mux.Handle("POST /v1/logout", srv.requireAuth(http.HandlerFunc(srv.handleLogout)))
+	mux.Handle("POST /v1/sync/push", srv.requireAuth(http.HandlerFunc(srv.handleSyncPush)))
+	mux.Handle("GET /v1/sync/pull", srv.requireAuth(http.HandlerFunc(srv.handleSyncPull)))
 	return mux
 }
