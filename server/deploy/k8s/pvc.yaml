@@ -1,0 +1,18 @@
+# PersistentVolumeClaim for the SQLite database (R12): state lives outside the
+# container, so image rebuilds and pod restarts never lose data.
+# storageClassName is intentionally omitted -> the cluster's default StorageClass
+# is used. The class (hostPath, local-path, EBS, ...) is cluster-specific; set it
+# explicitly if your cluster has more than one.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: noreplay-data
+  labels:
+    app: noreplay
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi
