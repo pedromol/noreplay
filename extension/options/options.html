@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NoReplay - Account</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 16px;
+        max-width: 480px;
+      }
+      form {
+        margin-bottom: 12px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 6px;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 12px;
+      }
+      .status {
+        margin-top: 8px;
+        min-height: 1.2em;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>NoReplay</h1>
+    <div id="session-status" class="status">Checking session...</div>
+
+    <form id="signup-form" novalidate>
+      <h2>Sign up</h2>
+      <label>
+        Email
+        <input id="signup-email" type="email" autocomplete="email" required />
+      </label>
+      <label>
+        Password
+        <input id="signup-password" type="password" autocomplete="new-password" minlength="12" required />
+      </label>
+      <button type="submit">Sign up</button>
+      <div id="signup-feedback" class="status"></div>
+    </form>
+
+    <form id="login-form" novalidate>
+      <h2>Log in</h2>
+      <label>
+        Email
+        <input id="login-email" type="email" autocomplete="email" required />
+      </label>
+      <label>
+        Password
+        <input id="login-password" type="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit">Log in</button>
+      <div id="login-feedback" class="status"></div>
+    </form>
+
+    <form id="logout-form" class="hidden">
+      <h2>Session</h2>
+      <button type="submit">Log out</button>
+      <div id="logout-feedback" class="status"></div>
+    </form>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

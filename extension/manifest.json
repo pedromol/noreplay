@@ -16,7 +16,11 @@
   "permissions": ["storage", "webNavigation"],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://m.youtube.com/*"
+    "https://m.youtube.com/*",
+    "https://noreplay.local/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://[::1]/*"
   ],
   "background": {
     "scripts": ["background.js"],
@@ -34,5 +38,9 @@
       "css": ["content/skip.css"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  }
 }
