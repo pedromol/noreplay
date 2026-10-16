@@ -25,7 +25,13 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["content/navigator.js", "content/progress.js"],
+      "js": [
+        "lib/skip-core.js",
+        "content/navigator.js",
+        "content/progress.js",
+        "content/skip.js"
+      ],
+      "css": ["content/skip.css"],
       "run_at": "document_idle"
     }
   ]

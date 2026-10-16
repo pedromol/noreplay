@@ -18,8 +18,44 @@ export function createBackground({ browser, now = () => Date.now() } = {}) {
   const navigation = createNavigationController({
     onVideoChange({ tabId, videoId }) {
       notifyTab(tabId, { type: "video-change", videoId });
+      notifyVideoState(tabId, videoId);
     },
   });
+
+  async function videoState(videoId) {
+    if (!videoId) {
+      return { type: "video-state", videoId: null, watched: false, neverSkip: false, shouldSkip: false };
+    }
+    let record = null;
+    try {
+      record = await catalog.get(videoId);
+    } catch {
+      record = null;
+    }
+    const watched = Boolean(record && record.watched);
+    const neverSkip = Boolean(record && record.neverSkip);
+    return {
+      type: "video-state",
+      videoId,
+      watched,
+      neverSkip,
+      shouldSkip: watched && !neverSkip,
+    };
+  }
+
+  function notifyVideoState(tabId, videoId) {
+    videoState(videoId)
+      .then((state) => notifyTab(tabId, state))
+      .catch(() => {
+        notifyTab(tabId, {
+          type: "video-state",
+          videoId: videoId ?? null,
+          watched: false,
+          neverSkip: false,
+          shouldSkip: false,
+        });
+      });
+  }
 
   function notifyTab(tabId, message) {
     try {
@@ -62,6 +98,17 @@ export function createBackground({ browser, now = () => Date.now() } = {}) {
         durationSeconds: message.duration,
       });
       return undefined;
+    }
+    if (message && message.type === "mark-never-skip") {
+      const url = await resolveTabUrl(tabId);
+      const videoId = extractVideoId(url);
+      if (!videoId) return { videoId: null };
+      await catalog.markNeverSkip(videoId, now());
+      return { videoId };
+    }
+    if (message && message.type === "video-state-request") {
+      const url = await resolveTabUrl(tabId);
+      return videoState(extractVideoId(url));
     }
     return undefined;
   }
