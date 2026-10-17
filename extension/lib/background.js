@@ -2,6 +2,7 @@ import { createCatalog } from "../storage/catalog.js";
 import { createNavigationController } from "./navigation.js";
 import { createProgressTracker } from "./progress.js";
 import { extractVideoId } from "./video.js";
+import { isHistoryUrl, isValidVideoId, parseTargetCount } from "./history-core.js";
 import { createSyncClient, DEFAULT_BASE_URL } from "../sync/client.js";
 import { createSyncEngine } from "../sync/engine.js";
 
@@ -22,6 +23,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
 
   let syncClient = createSyncClient({ baseUrl: DEFAULT_BASE_URL, fetch });
   let sessionExpired = false;
+  let activeImport = null;
 
   function makeEngine(client) {
     return createSyncEngine({
@@ -187,6 +189,68 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         const url = await resolveTabUrl(tabId);
         return videoState(extractVideoId(url));
       }
+      if (message && message.type === "history-import-ready") {
+        if (activeImport && tabId === activeImport.tabId) {
+          const url = await resolveTabUrl(tabId);
+          if (isHistoryUrl(url)) {
+            return { active: true, targetCount: activeImport.targetCount };
+          }
+        }
+        return { active: false };
+      }
+      if (message && message.type === "history-import-batch") {
+        if (!activeImport || tabId !== activeImport.tabId) {
+          return { ok: false, reason: "unauthorized_tab" };
+        }
+        const url = await resolveTabUrl(tabId);
+        if (!isHistoryUrl(url)) {
+          return { ok: false, reason: "invalid_url" };
+        }
+        const rawIds = Array.isArray(message.videoIds) ? message.videoIds : [];
+        const validIds = [];
+        for (const id of rawIds) {
+          if (isValidVideoId(id) && !activeImport.importedIds.has(id)) {
+            activeImport.importedIds.add(id);
+            validIds.push(id);
+          }
+        }
+        if (validIds.length > 0) {
+          await catalog.bulkMarkWatched(validIds, now());
+        }
+        return {
+          ok: true,
+          importedCount: activeImport.importedIds.size,
+          batchCount: validIds.length,
+        };
+      }
+      if (message && message.type === "history-import-finish") {
+        if (activeImport && tabId === activeImport.tabId) {
+          const total = activeImport.importedIds.size;
+          activeImport = null;
+          await triggerSync();
+          return { ok: true, total };
+        }
+        return { ok: false };
+      }
+      if (message && message.type === "close-tab") {
+        try {
+          await browser.tabs.remove(tabId);
+        } catch {
+          /* ignore */
+        }
+        return { ok: true };
+      }
+    }
+
+    if (message && message.type === "start-history-import") {
+      const targetCount = parseTargetCount(message.targetCount);
+      const createdTab = await browser.tabs.create({ url: "https://www.youtube.com/feed/history" });
+      activeImport = {
+        tabId: createdTab.id,
+        targetCount,
+        importedIds: new Set(),
+      };
+      return { ok: true, tabId: createdTab.id, targetCount };
     }
 
     if (
@@ -260,6 +324,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
 
   function onTabRemoved(tabId) {
     navigation.forget(tabId);
+    if (activeImport && activeImport.tabId === tabId) {
+      activeImport = null;
+    }
   }
 
   async function init() {

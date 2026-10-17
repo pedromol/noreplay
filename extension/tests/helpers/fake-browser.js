@@ -28,6 +28,16 @@ export function createFakeBrowser({ tabs = {} } = {}) {
         if (Object.prototype.hasOwnProperty.call(tabs, tabId)) return { id: tabId, ...tabs[tabId] };
         throw new Error(`no tab ${tabId}`);
       },
+      async create(createProperties = {}) {
+        const nextId = Math.max(0, ...Object.keys(tabs).map(Number)) + 1;
+        const newTab = { id: nextId, ...createProperties };
+        tabs[nextId] = newTab;
+        return { ...newTab };
+      },
+      async remove(tabId) {
+        delete tabs[tabId];
+        await this.onRemoved.fire(tabId);
+      },
       async sendMessage(tabId, message) {
         sentMessages.push({ tabId, message });
       },
