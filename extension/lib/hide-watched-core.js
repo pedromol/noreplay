@@ -1,10 +1,4 @@
-(function (root, factory) {
-  if (typeof module === "object" && module.exports) {
-    module.exports = factory();
-  } else {
-    root.NoReplayHideWatched = factory();
-  }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+(function (root) {
   const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
   const CONTAINER_SELECTORS = [
@@ -45,10 +39,10 @@
     return Boolean(record.watched);
   }
 
-  return {
+  root.NoReplayHideWatched = {
     CONTAINER_SELECTORS,
     extractVideoIdFromHref,
     extractVideoIdFromElement,
     shouldHideVideo,
   };
-});
+})(typeof globalThis !== "undefined" ? globalThis : this);
