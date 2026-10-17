@@ -3,7 +3,7 @@ import { createNavigationController } from "./navigation.js";
 import { createProgressTracker } from "./progress.js";
 import { extractVideoId } from "./video.js";
 import { isHistoryUrl, isValidVideoId, parseTargetCount } from "./history-core.js";
-import { createSyncClient, DEFAULT_BASE_URL } from "../sync/client.js";
+import { createSyncClient, sanitizeBaseUrl, DEFAULT_BASE_URL } from "../sync/client.js";
 import { createSyncEngine } from "../sync/engine.js";
 
 export const HISTORY_FILTER = {
@@ -245,6 +245,13 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
       }
     }
 
+    if (tabId !== undefined) {
+      const senderUrl = await resolveTabUrl(tabId);
+      if (senderUrl && /^https?:\/\//i.test(senderUrl)) {
+        return { ok: false, error: "unauthorized" };
+      }
+    }
+
     if (message && message.type === "start-history-import") {
       const targetCount = parseTargetCount(message.targetCount);
       const createdTab = await browser.tabs.create({ url: "https://www.youtube.com/feed/history" });
@@ -254,6 +261,42 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         importedIds: new Set(),
       };
       return { ok: true, tabId: createdTab.id, targetCount };
+    }
+
+    if (message && message.type === "catalog-stats") {
+      return await catalog.stats();
+    }
+    if (message && message.type === "catalog-export") {
+      const records = await catalog.list();
+      return { records };
+    }
+    if (message && message.type === "catalog-import") {
+      const records = Array.isArray(message.records) ? message.records : [];
+      const res = await catalog.importCatalog(records, now());
+      if (res && res.imported > 0) {
+        triggerSync();
+      }
+      return res;
+    }
+    if (message && message.type === "catalog-clear") {
+      await catalog.clear();
+      return { ok: true };
+    }
+    if (message && message.type === "get-sync-config") {
+      const baseUrl = await getBaseUrl();
+      const token = await getToken();
+      return { baseUrl, hasToken: Boolean(token) };
+    }
+    if (message && message.type === "set-server-url") {
+      const rawUrl = typeof message.baseUrl === "string" ? message.baseUrl.trim() : "";
+      const sanitized = sanitizeBaseUrl(rawUrl);
+      if (sanitized) {
+        await browser.storage.local.set({ [BASE_URL_KEY]: sanitized });
+      } else {
+        await browser.storage.local.remove(BASE_URL_KEY);
+      }
+      const res = await configureSync();
+      return { ok: true, baseUrl: res.baseUrl };
     }
 
     if (

@@ -23,7 +23,10 @@
   function evaluateContainer(container) {
     if (!container || typeof container.querySelector !== "function") return;
     const videoId = core.extractVideoIdFromElement(container);
-    if (!videoId) return;
+    if (!videoId) {
+      container.classList.remove("noreplay-watched-hidden");
+      return;
+    }
 
     const record = cachedCatalog[videoId];
     const shouldHide = core.shouldHideVideo(record, true);

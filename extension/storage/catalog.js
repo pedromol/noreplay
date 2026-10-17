@@ -50,6 +50,29 @@ export function createCatalog(storageArea) {
     return Object.values(all).map((record) => ({ ...record }));
   }
 
+  async function stats() {
+    const all = await readAll();
+    let watched = 0;
+    let neverSkip = 0;
+    const records = Object.values(all);
+    for (const record of records) {
+      if (record && record.watched) watched += 1;
+      if (record && record.neverSkip) neverSkip += 1;
+    }
+    return {
+      total: records.length,
+      watched,
+      neverSkip,
+    };
+  }
+
+  function clear() {
+    return serialize(async () => {
+      await storageArea.remove([CATALOG_KEY, "playtimeSeconds"]);
+      return true;
+    });
+  }
+
   function markWatched(videoId, at) {
     return update(videoId, { watched: true, watchedAt: at });
   }
@@ -82,5 +105,58 @@ export function createCatalog(storageArea) {
     return get(videoId).then((record) => Boolean(record && record.watched && !record.neverSkip));
   }
 
-  return { get, list, update, markWatched, bulkMarkWatched, markNeverSkip, shouldSkip };
+  function importCatalog(records, at = Date.now()) {
+    if (!Array.isArray(records) || records.length === 0) {
+      return serialize(async () => {
+        const currentStats = await stats();
+        return { imported: 0, total: currentStats.total };
+      });
+    }
+    return serialize(async () => {
+      const all = await readAll();
+      let importedCount = 0;
+      for (const rec of records) {
+        if (!rec || typeof rec !== "object" || !rec.videoId || typeof rec.videoId !== "string") {
+          continue;
+        }
+        const videoId = rec.videoId.trim();
+        if (!videoId) continue;
+        const existing = all[videoId] ?? emptyRecord(videoId);
+        const watched = Boolean(rec.watched) || Boolean(existing.watched);
+        const neverSkip = Boolean(rec.neverSkip) || Boolean(existing.neverSkip);
+        const rawWatchedAt = typeof rec.watchedAt === "number" ? rec.watchedAt : (rec.watched ? at : 0);
+        const rawNeverSkipAt = typeof rec.neverSkipAt === "number" ? rec.neverSkipAt : (rec.neverSkip ? at : 0);
+        const recWatchedAt = Math.min(Math.max(0, rawWatchedAt), at);
+        const recNeverSkipAt = Math.min(Math.max(0, rawNeverSkipAt), at);
+        const existingWatchedAt = existing && typeof existing.watchedAt === "number" ? Math.max(0, existing.watchedAt) : 0;
+        const existingNeverSkipAt = existing && typeof existing.neverSkipAt === "number" ? Math.max(0, existing.neverSkipAt) : 0;
+        const nextWatchedAt = watched ? Math.max(existingWatchedAt, recWatchedAt) : 0;
+        const nextNeverSkipAt = neverSkip ? Math.max(existingNeverSkipAt, recNeverSkipAt) : 0;
+
+        all[videoId] = {
+          videoId,
+          watched,
+          watchedAt: nextWatchedAt,
+          neverSkip,
+          neverSkipAt: nextNeverSkipAt,
+        };
+        importedCount += 1;
+      }
+      await storageArea.set({ [CATALOG_KEY]: all });
+      return { imported: importedCount, total: Object.keys(all).length };
+    });
+  }
+
+  return {
+    get,
+    list,
+    stats,
+    clear,
+    update,
+    markWatched,
+    bulkMarkWatched,
+    markNeverSkip,
+    shouldSkip,
+    importCatalog,
+  };
 }
