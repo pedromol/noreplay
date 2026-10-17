@@ -336,6 +336,12 @@ func (s *Store) UpsertCatalogRecord(ctx context.Context, rec CatalogRecord, now 
 		merged.WatchedAt = max(existing.WatchedAt, clampedWatchedAt)
 		merged.NeverSkipAt = max(existing.NeverSkipAt, clampedNeverSkipAt)
 	}
+	if !merged.Watched {
+		merged.WatchedAt = 0
+	}
+	if !merged.NeverSkip {
+		merged.NeverSkipAt = 0
+	}
 	merged.UpdatedAt = max(existing.UpdatedAt, now.UnixMilli())
 
 	if _, err := conn.ExecContext(ctx,
@@ -412,6 +418,9 @@ func (s *Store) ListCatalog(ctx context.Context, userID string) ([]CatalogRecord
 }
 
 func clampTimestamp(ts int64, now time.Time) int64 {
+	if ts < 0 {
+		return 0
+	}
 	if ts > now.UnixMilli() {
 		return now.UnixMilli()
 	}

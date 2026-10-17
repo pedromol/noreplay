@@ -372,3 +372,59 @@ test("token only travels in the Authorization header, never in a URL or a log", 
   assert.equal(String(call.url).includes(SECRET), false, "token not in URL");
   assert.equal(logs.some((l) => l.includes(SECRET)), false, "token not in logs");
 });
+
+test("pull merge preserves zero watchedAt for unwatched record with neverSkip", async () => {
+  const storage = createMemoryStorage();
+  const catalog = createCatalog(storage);
+  const client = createRecordingClient({
+    push: () => jsonResponse(200, { merged: 0 }),
+    pull: () =>
+      jsonResponse(200, {
+        records: [
+          {
+            videoId: "v3",
+            watched: false,
+            watchedAt: 0,
+            neverSkip: true,
+            neverSkipAt: 1500,
+            updatedAt: 1500,
+          },
+        ],
+      }),
+  });
+  const engine = createSyncEngine({ catalog, client });
+  engine.start("token-xyz");
+  await flush();
+
+  const record = await catalog.get("v3");
+  assert.ok(record, "record stored");
+  assert.equal(record.watched, false);
+  assert.equal(record.watchedAt, 0, "watchedAt must stay 0 when watched is false");
+  assert.equal(record.neverSkip, true);
+  assert.equal(record.neverSkipAt, 1500);
+});
+
+test("mark-never-skip triggers sync when logged in", async () => {
+  const storage = createMemoryStorage();
+  const browser = createFakeBrowser();
+  browser.storage.local = storage;
+  const fetchMock = createFetchMock([
+    { status: 200, body: { merged: 1 } },
+    { status: 200, body: { records: [] } },
+  ]);
+  const bg = createBackground({ browser, now: () => 1000, fetch: fetchMock.fetch });
+  await bg.ready;
+  bg.syncEngine.setToken("valid-token");
+
+  // Mock tab url
+  browser.tabs.get = async () => ({ id: 1, url: "https://www.youtube.com/watch?v=never1" });
+  await browser.runtime.onMessage.fire(
+    { type: "mark-never-skip" },
+    { tab: { id: 1 } }
+  );
+  await flush();
+
+  assert.equal(await bg.catalog.get("never1").then((r) => r.neverSkip), true);
+  assert.ok(fetchMock.calls.some((c) => c.url.includes("/v1/sync/push")), "push was triggered");
+});
+

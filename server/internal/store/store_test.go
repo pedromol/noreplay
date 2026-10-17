@@ -405,3 +405,19 @@ func TestCatalogMergeTimestampAntigoNaoEhReescrito(t *testing.T) {
 		t.Errorf("never_skip_at = %d, want 2000 (older push must not rewrite)", final.NeverSkipAt)
 	}
 }
+
+func TestCatalogMergeTimestampNegativoEhAparado(t *testing.T) {
+	push := catalogPush{
+		rec: store.CatalogRecord{VideoID: "v1", Watched: true, WatchedAt: -500, NeverSkip: false, NeverSkipAt: 1000},
+		now: time.UnixMilli(2000),
+	}
+
+	final := applyPushes(t, push)
+	if final.WatchedAt != 0 {
+		t.Errorf("watched_at = %d, want 0 (negative timestamp must clamp to 0)", final.WatchedAt)
+	}
+	if final.NeverSkipAt != 0 {
+		t.Errorf("never_skip_at = %d, want 0 (never_skip=false must zero timestamp)", final.NeverSkipAt)
+	}
+}
+

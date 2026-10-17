@@ -29,7 +29,10 @@
 
   function attach() {
     const next = document.querySelector("#movie_player video") || document.querySelector("video");
-    if (next === media) return;
+    if (next === media) {
+      lastTime = null;
+      return;
+    }
     if (media) media.removeEventListener("timeupdate", onTimeUpdate);
     media = next;
     lastTime = null;
@@ -54,6 +57,7 @@
   }
 
   setInterval(flush, FLUSH_INTERVAL_MS);
+  window.addEventListener("yt-navigate-start", flush, true);
   window.addEventListener("yt-navigate-finish", attach, true);
   window.addEventListener("pagehide", flush);
 

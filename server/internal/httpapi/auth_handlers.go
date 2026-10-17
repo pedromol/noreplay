@@ -228,16 +228,19 @@ func (s *server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, ok := bearerToken(r)
 		if !ok {
+			w.Header().Set("WWW-Authenticate", "Bearer")
 			writeError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		sess, err := s.store.GetSessionByTokenHash(r.Context(), auth.HashToken(token), s.now())
 		if err != nil {
+			w.Header().Set("WWW-Authenticate", "Bearer")
 			writeError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
 		user, err := s.store.GetUserByID(r.Context(), sess.UserID)
 		if err != nil {
+			w.Header().Set("WWW-Authenticate", "Bearer")
 			writeError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}

@@ -165,11 +165,14 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         const url = await resolveTabUrl(tabId);
         const videoId = extractVideoId(url);
         if (!videoId) return undefined;
-        await progress.record({
+        const res = await progress.record({
           videoId,
           deltaSeconds: message.deltaSeconds,
           durationSeconds: message.duration,
         });
+        if (res && res.marked) {
+          triggerSync();
+        }
         return undefined;
       }
       if (message && message.type === "mark-never-skip") {
@@ -177,6 +180,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         const videoId = extractVideoId(url);
         if (!videoId) return { videoId: null };
         await catalog.markNeverSkip(videoId, now());
+        triggerSync();
         return { videoId };
       }
       if (message && message.type === "video-state-request") {

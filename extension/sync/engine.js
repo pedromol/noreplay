@@ -34,13 +34,12 @@ export function createSyncEngine({
       const neverSkip = Boolean(server.neverSkip);
       const serverWatchedAt = typeof server.watchedAt === "number" ? server.watchedAt : 0;
       const serverNeverSkipAt = typeof server.neverSkipAt === "number" ? server.neverSkipAt : 0;
-      const serverUpdatedAt = typeof server.updatedAt === "number" ? server.updatedAt : Math.max(serverWatchedAt, serverNeverSkipAt);
       const existingWatchedAt = existing && typeof existing.watchedAt === "number" ? existing.watchedAt : 0;
       const existingNeverSkipAt = existing && typeof existing.neverSkipAt === "number" ? existing.neverSkipAt : 0;
       const nextWatched = watched || (existing && existing.watched) || false;
       const nextNeverSkip = neverSkip || (existing && existing.neverSkip) || false;
-      const nextWatchedAt = Math.max(existingWatchedAt, serverWatchedAt, serverUpdatedAt);
-      const nextNeverSkipAt = Math.max(existingNeverSkipAt, serverNeverSkipAt, serverUpdatedAt);
+      const nextWatchedAt = nextWatched ? Math.max(existingWatchedAt, serverWatchedAt) : 0;
+      const nextNeverSkipAt = nextNeverSkip ? Math.max(existingNeverSkipAt, serverNeverSkipAt) : 0;
       const patch = {};
       if (nextWatched !== (existing ? existing.watched : false) || nextWatchedAt !== (existing ? existing.watchedAt : 0)) {
         patch.watched = nextWatched;

@@ -436,6 +436,9 @@ func TestRequireAuthRejectsMissingToken(t *testing.T) {
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401 (body %s)", resp.StatusCode, body)
 	}
+	if got := resp.Header.Get("WWW-Authenticate"); got != "Bearer" {
+		t.Errorf("missing token WWW-Authenticate = %q, want Bearer", got)
+	}
 	if !strings.Contains(body, "unauthorized") {
 		t.Errorf("body = %q, want unauthorized", body)
 	}
@@ -443,6 +446,8 @@ func TestRequireAuthRejectsMissingToken(t *testing.T) {
 	garbage := env.get(t, "/v1/me", "not-a-real-token")
 	if body := readBody(t, garbage); garbage.StatusCode != http.StatusUnauthorized {
 		t.Errorf("garbage token status = %d, want 401 (body %s)", garbage.StatusCode, body)
+	} else if got := garbage.Header.Get("WWW-Authenticate"); got != "Bearer" {
+		t.Errorf("garbage token WWW-Authenticate = %q, want Bearer", got)
 	}
 }
 
