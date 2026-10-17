@@ -118,3 +118,60 @@ test("history-import-batch records valid IDs and finish triggers sync", async ()
   );
   await assert.rejects(browser.tabs.get(startRes.tabId));
 });
+
+test("history-import-batch enforces targetCount cap from background", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  const bg = createBackground({ browser });
+  await bg.ready;
+
+  const startRes = (await browser.runtime.onMessage.fire(
+    { type: "start-history-import", targetCount: 2 },
+    {}
+  ))[0];
+
+  const batchRes = (await browser.runtime.onMessage.fire(
+    {
+      type: "history-import-batch",
+      videoIds: ["vid11111111", "vid22222222", "vid33333333", "vid44444444"],
+    },
+    { tab: { id: startRes.tabId } }
+  ))[0];
+
+  assert.equal(batchRes.ok, true);
+  assert.equal(batchRes.importedCount, 2);
+  assert.equal(batchRes.batchCount, 2);
+  assert.ok(await bg.catalog.get("vid11111111"));
+  assert.ok(await bg.catalog.get("vid22222222"));
+  assert.equal(await bg.catalog.get("vid33333333"), null);
+});
+
+test("onTabRemoved triggers sync when an active import with videos is closed", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  let syncTriggered = false;
+
+  const bg = createBackground({ browser });
+  await bg.ready;
+  bg.syncEngine.trigger = async () => {
+    syncTriggered = true;
+    return { ok: true };
+  };
+
+  const startRes = (await browser.runtime.onMessage.fire(
+    { type: "start-history-import", targetCount: 10 },
+    {}
+  ))[0];
+
+  await browser.runtime.onMessage.fire(
+    {
+      type: "history-import-batch",
+      videoIds: ["vid11111111"],
+    },
+    { tab: { id: startRes.tabId } }
+  );
+
+  assert.equal(syncTriggered, false);
+  bg.onTabRemoved(startRes.tabId);
+  assert.equal(syncTriggered, true);
+});

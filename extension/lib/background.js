@@ -209,6 +209,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         const rawIds = Array.isArray(message.videoIds) ? message.videoIds : [];
         const validIds = [];
         for (const id of rawIds) {
+          if (activeImport.targetCount > 0 && activeImport.importedIds.size >= activeImport.targetCount) {
+            break;
+          }
           if (isValidVideoId(id) && !activeImport.importedIds.has(id)) {
             activeImport.importedIds.add(id);
             validIds.push(id);
@@ -325,7 +328,11 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
   function onTabRemoved(tabId) {
     navigation.forget(tabId);
     if (activeImport && activeImport.tabId === tabId) {
+      const count = activeImport.importedIds.size;
       activeImport = null;
+      if (count > 0) {
+        triggerSync();
+      }
     }
   }
 

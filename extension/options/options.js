@@ -97,10 +97,16 @@ function onLogout(e) {
 
 async function onHistoryImport(e) {
   e.preventDefault();
+  if (submitting) return;
+  submitting = true;
+  const btn = byId("history-import-btn");
+  if (btn) btn.disabled = true;
   const targetSelect = byId("history-target");
   const target = targetSelect ? targetSelect.value : "100";
   setText("history-import-feedback", "Abrindo página de histórico...");
   const res = await send({ type: "start-history-import", targetCount: target });
+  submitting = false;
+  if (btn) btn.disabled = false;
   if (res && res.ok) {
     setText("history-import-feedback", "Histórico aberto em nova aba. Acompanhe o progresso no YouTube.");
   } else {

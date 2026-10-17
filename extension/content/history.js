@@ -11,6 +11,7 @@
     if (!href || typeof href !== "string") return null;
     try {
       const url = new URL(href, window.location.origin);
+      if (!/(^|\.)youtube\.com$/.test(url.hostname)) return null;
       if (url.pathname !== "/watch") return null;
       const id = url.searchParams.get("v");
       return id && VIDEO_ID_REGEX.test(id) ? id : null;
@@ -19,10 +20,11 @@
     }
   }
 
-  function findDomVideoIds(seen) {
-    const links = document.querySelectorAll('a[href*="/watch?v="]');
+  function findDomVideoIds(seen, maxCount = Infinity) {
+    const links = document.querySelectorAll('a[href*="/watch"]');
     const newIds = [];
     for (const link of links) {
+      if (newIds.length >= maxCount) break;
       const id = extractIdFromHref(link.getAttribute("href") || link.href);
       if (id && !seen.has(id)) {
         seen.add(id);
@@ -74,19 +76,6 @@
       statusText.textContent = `Coletados: ${seenIds.size} de ${targetStr} vídeos...`;
     }
 
-    function renderFinished(total) {
-      statusText.textContent = `Importação concluída! Total de ${total} vídeos importados.`;
-      actionsContainer.innerHTML = `
-        <button type="button" class="noreplay-btn" id="noreplay-close-tab-btn">Fechar aba</button>
-      `;
-      const closeBtn = banner.querySelector("#noreplay-close-tab-btn");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          browserApi.runtime.sendMessage({ type: "close-tab" }).catch(() => {});
-        });
-      }
-    }
-
     function renderEmptyAlert() {
       statusText.textContent = "Nenhum vídeo encontrado. Verifique se você está conectado à sua conta do YouTube.";
       actionsContainer.innerHTML = `
@@ -100,41 +89,71 @@
       }
     }
 
+    function renderFinished(total) {
+      if (total === 0) {
+        renderEmptyAlert();
+        return;
+      }
+      statusText.textContent = `Importação concluída! Total de ${total} vídeos importados.`;
+      actionsContainer.innerHTML = `
+        <button type="button" class="noreplay-btn" id="noreplay-close-tab-btn">Fechar aba</button>
+      `;
+      const closeBtn = banner.querySelector("#noreplay-close-tab-btn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          browserApi.runtime.sendMessage({ type: "close-tab" }).catch(() => {});
+        });
+      }
+    }
+
     stopBtn.addEventListener("click", () => {
       isStopped = true;
+      stopBtn.disabled = true;
+      stopBtn.textContent = "Finalizando...";
     });
 
-    initialTimer = setTimeout(() => {
+    initialTimer = setTimeout(async () => {
       if (seenIds.size === 0 && !isStopped) {
         isStopped = true;
-        renderEmptyAlert();
+        const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
+        renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : 0);
       }
     }, INITIAL_TIMEOUT_MS);
 
     async function step() {
       if (isStopped) {
-        if (initialTimer) clearTimeout(initialTimer);
-        const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" });
+        if (initialTimer) {
+          clearTimeout(initialTimer);
+          initialTimer = null;
+        }
+        const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
         renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
         return;
       }
 
-      const newIds = findDomVideoIds(seenIds);
+      const remaining = target > 0 ? Math.max(0, target - seenIds.size) : Infinity;
+      const newIds = findDomVideoIds(seenIds, remaining);
       if (newIds.length > 0) {
         if (initialTimer) {
           clearTimeout(initialTimer);
           initialTimer = null;
         }
         emptyScrolls = 0;
-        await browserApi.runtime.sendMessage({
+        const batchRes = await browserApi.runtime.sendMessage({
           type: "history-import-batch",
           videoIds: newIds,
-        }).catch(() => {});
+        }).catch(() => null);
+
+        if (!batchRes || !batchRes.ok) {
+          isStopped = true;
+          return;
+        }
+
         renderProgress();
 
         if (target > 0 && seenIds.size >= target) {
           isStopped = true;
-          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" });
+          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
           renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
           return;
         }
@@ -142,7 +161,7 @@
         emptyScrolls += 1;
         if (emptyScrolls >= EMPTY_ATTEMPTS_LIMIT) {
           isStopped = true;
-          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" });
+          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
           renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
           return;
         }
