@@ -31,11 +31,13 @@
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
       "js": [
         "lib/skip-core.js",
+        "lib/hide-watched-core.js",
         "content/navigator.js",
         "content/progress.js",
-        "content/skip.js"
+        "content/skip.js",
+        "content/hide-watched.js"
       ],
-      "css": ["content/skip.css"],
+      "css": ["content/skip.css", "content/hide-watched.css"],
       "run_at": "document_idle"
     },
     {

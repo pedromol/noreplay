@@ -1,0 +1,121 @@
+(() => {
+  const browserApi = globalThis.browser || globalThis.chrome;
+  if (!browserApi || !browserApi.storage || !browserApi.storage.local) return;
+
+  const core = globalThis.NoReplayHideWatched;
+  if (!core) return;
+
+  const SETTINGS_KEY = "settings.hideWatched";
+  const CATALOG_KEY = "catalog";
+  const SELECTOR = core.CONTAINER_SELECTORS.join(", ");
+
+  let isEnabled = true;
+  let cachedCatalog = {};
+  let scheduledScan = false;
+
+  function updateBodyClass() {
+    const target = document.body || document.documentElement;
+    if (target) {
+      target.classList.toggle("noreplay-hide-watched-enabled", isEnabled);
+    }
+  }
+
+  function evaluateContainer(container) {
+    if (!container || typeof container.querySelector !== "function") return;
+    const videoId = core.extractVideoIdFromElement(container);
+    if (!videoId) return;
+
+    const record = cachedCatalog[videoId];
+    const shouldHide = core.shouldHideVideo(record, true);
+    container.classList.toggle("noreplay-watched-hidden", shouldHide);
+  }
+
+  function scanAllContainers() {
+    const containers = document.querySelectorAll(SELECTOR);
+    for (const container of containers) {
+      evaluateContainer(container);
+    }
+  }
+
+  function requestScan() {
+    if (scheduledScan) return;
+    scheduledScan = true;
+    const scheduleFn =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame
+        : (fn) => setTimeout(fn, 16);
+    scheduleFn(() => {
+      scheduledScan = false;
+      scanAllContainers();
+    });
+  }
+
+  function handleMutations(mutations) {
+    let hasRelevantNodes = false;
+    for (const mutation of mutations) {
+      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1) {
+            hasRelevantNodes = true;
+            break;
+          }
+        }
+      }
+      if (hasRelevantNodes) break;
+    }
+    if (hasRelevantNodes) {
+      requestScan();
+    }
+  }
+
+  async function init() {
+    try {
+      const stored = await browserApi.storage.local.get([SETTINGS_KEY, CATALOG_KEY]);
+      isEnabled =
+        stored && stored[SETTINGS_KEY] !== undefined ? Boolean(stored[SETTINGS_KEY]) : true;
+      cachedCatalog = (stored && stored[CATALOG_KEY]) || {};
+    } catch {
+      isEnabled = true;
+      cachedCatalog = {};
+    }
+
+    updateBodyClass();
+    scanAllContainers();
+
+    if (typeof window.MutationObserver === "function") {
+      const observer = new window.MutationObserver(handleMutations);
+      const root = document.documentElement || document.body;
+      if (root) {
+        observer.observe(root, { childList: true, subtree: true });
+      }
+    }
+
+    if (
+      browserApi.storage.onChanged &&
+      typeof browserApi.storage.onChanged.addListener === "function"
+    ) {
+      browserApi.storage.onChanged.addListener((changes, area) => {
+        if (area !== "local") return;
+
+        if (changes[SETTINGS_KEY]) {
+          isEnabled = Boolean(changes[SETTINGS_KEY].newValue);
+          updateBodyClass();
+        }
+
+        if (changes[CATALOG_KEY]) {
+          cachedCatalog = changes[CATALOG_KEY].newValue || {};
+          requestScan();
+        }
+      });
+    }
+
+    window.addEventListener("yt-navigate-finish", () => requestScan(), true);
+    window.addEventListener("yt-page-data-updated", () => requestScan(), true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
+})();
