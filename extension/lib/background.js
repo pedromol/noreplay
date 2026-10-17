@@ -144,10 +144,15 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
   async function resolveTabUrl(tabId) {
     try {
       const tab = await browser.tabs.get(tabId);
-      return tab ? tab.url ?? null : null;
+      if (tab && typeof tab.url === "string") return tab.url;
     } catch {
-      return null;
+      /* fall back to navigation state if tab url is unavailable */
     }
+    const currentId = navigation.current(tabId);
+    if (currentId) {
+      return `https://www.youtube.com/watch?v=${currentId}`;
+    }
+    return null;
   }
 
   function onHistoryStateUpdated(details) {
@@ -390,6 +395,13 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
   browser.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated, HISTORY_FILTER);
   if (browser.tabs && browser.tabs.onRemoved) {
     browser.tabs.onRemoved.addListener(onTabRemoved);
+  }
+  if (browser.action && browser.action.onClicked) {
+    browser.action.onClicked.addListener(() => {
+      if (browser.runtime && browser.runtime.openOptionsPage) {
+        browser.runtime.openOptionsPage();
+      }
+    });
   }
 
   const initPromise = init();

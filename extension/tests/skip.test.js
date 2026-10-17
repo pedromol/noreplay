@@ -483,3 +483,54 @@ test("video-state-request fails open on a non-watch tab", async () => {
     shouldSkip: false,
   });
 });
+
+test("manifest includes tabs permission for browser.tabs.get URL access", async () => {
+  const fs = await import("node:fs/promises");
+  const manifestRaw = await fs.readFile(new URL("../manifest.json", import.meta.url), "utf8");
+  const manifest = JSON.parse(manifestRaw);
+  assert.ok(
+    Array.isArray(manifest.permissions) && manifest.permissions.includes("tabs"),
+    "manifest.json must declare 'tabs' permission so browser.tabs.get returns url"
+  );
+});
+
+test("video-state-request falls back to navigation state when tabs.get omits url", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage({
+    catalog: {
+      nextVideo123: {
+        videoId: "nextVideo123",
+        watched: true,
+        watchedAt: 100,
+        neverSkip: false,
+        neverSkipAt: 0,
+      },
+    },
+  });
+  // Tab without url property (simulating Firefox stripping url without tabs permission)
+  browser.setTab(9, {});
+  const background = createBackground({ browser });
+
+  // History navigation previously observed nextVideo123 on tab 9
+  await browser.webNavigation.onHistoryStateUpdated.fire({
+    tabId: 9,
+    frameId: 0,
+    url: "https://www.youtube.com/watch?v=nextVideo123",
+  });
+  await flush();
+
+  // Subsequent video-state-request from skip.js on yt-navigate-finish
+  const reply = await background.onRuntimeMessage(
+    { type: "video-state-request" },
+    { tab: { id: 9 } }
+  );
+
+  assert.deepEqual(reply, {
+    type: "video-state",
+    videoId: "nextVideo123",
+    watched: true,
+    neverSkip: false,
+    shouldSkip: true,
+  });
+});
+
