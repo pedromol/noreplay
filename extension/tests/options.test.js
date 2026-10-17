@@ -9,6 +9,11 @@ import {
 } from "../sync/status.js";
 import { createFakeBrowser } from "./helpers/fake-browser.js";
 import { createMemoryStorage } from "./helpers/memory-storage.js";
+import {
+  loadHideWatchedSetting,
+  saveHideWatchedSetting,
+  HIDE_WATCHED_KEY,
+} from "../options/options.js";
 
 test("background message contract used by the options page", async () => {
   const storage = createMemoryStorage();
@@ -72,3 +77,26 @@ test("expired session is reported distinctly from no-session", () => {
 test("in-progress feedback exists before a result arrives", () => {
   assert.equal(ACCOUNT_STATUS.SUBMITTING, "submitting");
 });
+
+test("hide-watched setting defaults to true and persists boolean changes", async () => {
+  const storage = createMemoryStorage();
+
+  // TS3.1: Defaults to true when unset
+  const initial = await loadHideWatchedSetting(storage);
+  assert.equal(initial, true);
+
+  // TS3.3: Saves false
+  await saveHideWatchedSetting(storage, false);
+  const stored = await storage.get(HIDE_WATCHED_KEY);
+  assert.equal(stored[HIDE_WATCHED_KEY], false);
+
+  // TS3.2: Loads false when stored
+  const loadedFalse = await loadHideWatchedSetting(storage);
+  assert.equal(loadedFalse, false);
+
+  // Saves true again
+  await saveHideWatchedSetting(storage, true);
+  const loadedTrue = await loadHideWatchedSetting(storage);
+  assert.equal(loadedTrue, true);
+});
+

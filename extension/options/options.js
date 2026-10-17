@@ -114,6 +114,22 @@ async function onHistoryImport(e) {
   }
 }
 
+export const HIDE_WATCHED_KEY = "settings.hideWatched";
+
+export async function loadHideWatchedSetting(storage) {
+  try {
+    const stored = await storage.get(HIDE_WATCHED_KEY);
+    if (!stored || stored[HIDE_WATCHED_KEY] === undefined) return true;
+    return Boolean(stored[HIDE_WATCHED_KEY]);
+  } catch {
+    return true;
+  }
+}
+
+export async function saveHideWatchedSetting(storage, value) {
+  await storage.set({ [HIDE_WATCHED_KEY]: Boolean(value) });
+}
+
 function init() {
   const signupForm = byId("signup-form");
   if (signupForm) signupForm.addEventListener("submit", onSignup);
@@ -123,11 +139,26 @@ function init() {
   if (logoutForm) logoutForm.addEventListener("submit", onLogout);
   const historyForm = byId("history-import-form");
   if (historyForm) historyForm.addEventListener("submit", onHistoryImport);
+
+  const hideWatchedInput = byId("setting-hide-watched");
+  if (hideWatchedInput && browser && browser.storage && browser.storage.local) {
+    loadHideWatchedSetting(browser.storage.local).then((enabled) => {
+      hideWatchedInput.checked = enabled;
+    });
+    hideWatchedInput.addEventListener("change", async (e) => {
+      await saveHideWatchedSetting(browser.storage.local, e.target.checked);
+      setText("preferences-feedback", "Preferência salva.");
+      setTimeout(() => setText("preferences-feedback", ""), 2000);
+    });
+  }
+
   refreshStatus();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 }

@@ -86,9 +86,17 @@
           <option value="200">Últimos 200 vídeos</option>
           <option value="0">Todos até parar</option>
         </select>
-      </label>
       <button id="history-import-btn" type="submit">Importar Histórico</button>
       <div id="history-import-feedback" class="status"></div>
+    </form>
+
+    <form id="preferences-form">
+      <h2>Preferências de Exibição</h2>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input id="setting-hide-watched" type="checkbox" style="width: auto; margin-bottom: 0;" />
+        Ocultar vídeos já assistidos dos feeds e recomendações
+      </label>
+      <div id="preferences-feedback" class="status"></div>
     </form>
 
     <script type="module" src="options.js"></script>
