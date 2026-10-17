@@ -73,15 +73,33 @@ export function createSyncEngine({
     isSyncing = true;
     try {
       const local = await catalog.list();
-      const pushRes = await client.push(token, local.map(toPushRecord));
-      if (pushRes.status === 401) {
-        token = null;
-        stopped = true;
-        onUnauthorized();
-        return { ok: false, reason: "unauthorized", status: 401 };
-      }
-      if (!pushRes.ok && pushRes.status !== 0) {
-        return { ok: false, reason: "push_failed", status: pushRes.status };
+      const pushRecords = local.map(toPushRecord);
+      const BATCH_SIZE = 500;
+      if (pushRecords.length === 0) {
+        const pushRes = await client.push(token, []);
+        if (pushRes.status === 401) {
+          token = null;
+          stopped = true;
+          onUnauthorized();
+          return { ok: false, reason: "unauthorized", status: 401 };
+        }
+        if (!pushRes.ok && pushRes.status !== 0) {
+          return { ok: false, reason: "push_failed", status: pushRes.status };
+        }
+      } else {
+        for (let i = 0; i < pushRecords.length; i += BATCH_SIZE) {
+          const batch = pushRecords.slice(i, i + BATCH_SIZE);
+          const pushRes = await client.push(token, batch);
+          if (pushRes.status === 401) {
+            token = null;
+            stopped = true;
+            onUnauthorized();
+            return { ok: false, reason: "unauthorized", status: 401 };
+          }
+          if (!pushRes.ok && pushRes.status !== 0) {
+            return { ok: false, reason: "push_failed", status: pushRes.status };
+          }
+        }
       }
       const pullRes = await client.pull(token);
       if (pullRes.status === 401) {

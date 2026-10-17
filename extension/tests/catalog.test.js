@@ -71,3 +71,29 @@ test("a falsy stored catalog is treated as empty", async () => {
   const catalog = createCatalog(createMemoryStorage({ [CATALOG_KEY]: null }));
   assert.deepEqual(await catalog.list(), []);
 });
+
+test("bulkMarkWatched marks multiple videos as watched while preserving existing exceptions", async () => {
+  const catalog = createCatalog(createMemoryStorage());
+
+  await catalog.markNeverSkip("vid2", 500);
+
+  const updated = await catalog.bulkMarkWatched(["vid1", "vid2", "vid3"], 1000);
+  assert.equal(updated.length, 3);
+
+  const vid1 = await catalog.get("vid1");
+  assert.equal(vid1.watched, true);
+  assert.equal(vid1.watchedAt, 1000);
+  assert.equal(vid1.neverSkip, false);
+
+  const vid2 = await catalog.get("vid2");
+  assert.equal(vid2.watched, true);
+  assert.equal(vid2.watchedAt, 1000);
+  assert.equal(vid2.neverSkip, true);
+  assert.equal(vid2.neverSkipAt, 500);
+
+  const vid3 = await catalog.get("vid3");
+  assert.equal(vid3.watched, true);
+
+  const empty = await catalog.bulkMarkWatched([], 2000);
+  assert.deepEqual(empty, []);
+});

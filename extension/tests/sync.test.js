@@ -428,3 +428,31 @@ test("mark-never-skip triggers sync when logged in", async () => {
   assert.ok(fetchMock.calls.some((c) => c.url.includes("/v1/sync/push")), "push was triggered");
 });
 
+test("syncEngine pushes records in chunks of 500 when local catalog exceeds batch limit", async () => {
+  const storage = createMemoryStorage();
+  const catalog = createCatalog(storage);
+  const pushBatches = [];
+
+  const client = {
+    async push(token, records) {
+      pushBatches.push(records);
+      return jsonResponse(200, { merged: records.length });
+    },
+    async pull() {
+      return jsonResponse(200, { records: [] });
+    },
+  };
+
+  const videoIds = Array.from({ length: 750 }, (_, i) => `vid${String(i).padStart(4, "0")}`);
+  await catalog.bulkMarkWatched(videoIds, 1000);
+
+  const engine = createSyncEngine({ catalog, client });
+  engine.setToken("token-abc");
+
+  const res = await engine.trigger();
+  assert.equal(res.ok, true);
+  assert.equal(pushBatches.length, 2);
+  assert.equal(pushBatches[0].length, 500);
+  assert.equal(pushBatches[1].length, 250);
+});
+

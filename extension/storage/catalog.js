@@ -54,6 +54,26 @@ export function createCatalog(storageArea) {
     return update(videoId, { watched: true, watchedAt: at });
   }
 
+  function bulkMarkWatched(videoIds, at) {
+    if (!Array.isArray(videoIds) || videoIds.length === 0) {
+      return serialize(async () => []);
+    }
+    return serialize(async () => {
+      const all = await readAll();
+      const updated = [];
+      for (const videoId of videoIds) {
+        if (!videoId || typeof videoId !== "string") continue;
+        const existing = all[videoId] ?? emptyRecord(videoId);
+        const watchedAt = Math.max(existing.watchedAt ?? 0, at);
+        const next = { ...existing, watched: true, watchedAt, videoId };
+        all[videoId] = next;
+        updated.push({ ...next });
+      }
+      await storageArea.set({ [CATALOG_KEY]: all });
+      return updated;
+    });
+  }
+
   function markNeverSkip(videoId, at) {
     return update(videoId, { neverSkip: true, neverSkipAt: at });
   }
@@ -62,5 +82,5 @@ export function createCatalog(storageArea) {
     return get(videoId).then((record) => Boolean(record && record.watched && !record.neverSkip));
   }
 
-  return { get, list, update, markWatched, markNeverSkip, shouldSkip };
+  return { get, list, update, markWatched, bulkMarkWatched, markNeverSkip, shouldSkip };
 }
