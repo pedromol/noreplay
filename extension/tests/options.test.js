@@ -33,6 +33,10 @@ test("background message contract used by the options page", async () => {
 
   res = await browser.runtime.onMessage.fire({ type: "account-logout" });
   assert.equal(res[0].ok, true);
+
+  res = await browser.runtime.onMessage.fire({ type: "start-history-import", targetCount: 100 });
+  assert.equal(res[0].ok, true);
+  assert.equal(res[0].targetCount, 100);
 });
 
 test("each failure maps to a DISTINCT options feedback (no silent screen)", () => {

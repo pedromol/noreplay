@@ -20,7 +20,7 @@
         display: block;
         margin-bottom: 6px;
       }
-      input {
+      input, select {
         width: 100%;
         padding: 6px;
         margin-bottom: 8px;
@@ -74,6 +74,21 @@
       <h2>Session</h2>
       <button type="submit">Log out</button>
       <div id="logout-feedback" class="status"></div>
+    </form>
+
+    <form id="history-import-form">
+      <h2>Importar Histórico do YouTube</h2>
+      <label for="history-target">
+        Quantidade de vídeos
+        <select id="history-target">
+          <option value="50">Últimos 50 vídeos</option>
+          <option value="100" selected>Últimos 100 vídeos</option>
+          <option value="200">Últimos 200 vídeos</option>
+          <option value="0">Todos até parar</option>
+        </select>
+      </label>
+      <button id="history-import-btn" type="submit">Importar Histórico</button>
+      <div id="history-import-feedback" class="status"></div>
     </form>
 
     <script type="module" src="options.js"></script>

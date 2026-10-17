@@ -95,10 +95,28 @@ function onLogout(e) {
   runPhase("logout", { type: "account-logout" }, "logout-form", "logout-feedback");
 }
 
+async function onHistoryImport(e) {
+  e.preventDefault();
+  const targetSelect = byId("history-target");
+  const target = targetSelect ? targetSelect.value : "100";
+  setText("history-import-feedback", "Abrindo página de histórico...");
+  const res = await send({ type: "start-history-import", targetCount: target });
+  if (res && res.ok) {
+    setText("history-import-feedback", "Histórico aberto em nova aba. Acompanhe o progresso no YouTube.");
+  } else {
+    setText("history-import-feedback", "Erro ao iniciar importação do histórico.");
+  }
+}
+
 function init() {
-  byId("signup-form").addEventListener("submit", onSignup);
-  byId("login-form").addEventListener("submit", onLogin);
-  byId("logout-form").addEventListener("submit", onLogout);
+  const signupForm = byId("signup-form");
+  if (signupForm) signupForm.addEventListener("submit", onSignup);
+  const loginForm = byId("login-form");
+  if (loginForm) loginForm.addEventListener("submit", onLogin);
+  const logoutForm = byId("logout-form");
+  if (logoutForm) logoutForm.addEventListener("submit", onLogout);
+  const historyForm = byId("history-import-form");
+  if (historyForm) historyForm.addEventListener("submit", onHistoryImport);
   refreshStatus();
 }
 
