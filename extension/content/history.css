@@ -1,0 +1,56 @@
+#noreplay-history-banner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 320px;
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 8px;
+  background: #0f0f0f;
+  color: #f1f1f1;
+  border: 1px solid #3ea6ff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#noreplay-history-banner h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #3ea6ff;
+}
+
+#noreplay-history-banner .noreplay-status {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+#noreplay-history-banner .noreplay-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 18px;
+  border: none;
+  background: #3ea6ff;
+  color: #0f0f0f;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#noreplay-history-banner .noreplay-btn:hover {
+  background: #65b8ff;
+}
+
+#noreplay-history-banner .noreplay-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  margin-left: 8px;
+}
+
+#noreplay-history-banner .noreplay-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

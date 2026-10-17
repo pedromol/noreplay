@@ -37,6 +37,15 @@
       ],
       "css": ["content/skip.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/feed/history*",
+        "https://m.youtube.com/feed/history*"
+      ],
+      "js": ["content/history.js"],
+      "css": ["content/history.css"],
+      "run_at": "document_idle"
     }
   ],
   "options_ui": {

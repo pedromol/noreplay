@@ -5,8 +5,6 @@ import { createBackground } from "../lib/background.js";
 import { createFakeBrowser } from "./helpers/fake-browser.js";
 import { createMemoryStorage } from "./helpers/memory-storage.js";
 
-const flush = () => new Promise((resolve) => setTimeout(resolve, 25));
-
 test("start-history-import creates history tab and registers active session", async () => {
   const browser = createFakeBrowser();
   browser.storage.local = createMemoryStorage();
