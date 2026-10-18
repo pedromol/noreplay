@@ -236,12 +236,15 @@
     if (message && message.type === "video-state") handleVideoState(message);
   });
 
-  function onNavigation() {
-    requestState();
-  }
-
-  window.addEventListener("yt-navigate-finish", onNavigation, true);
-  window.addEventListener("yt-page-data-updated", onNavigation, true);
+  window.addEventListener(
+    "yt-navigate-finish",
+    () => {
+      dismissPopup();
+      requestState();
+    },
+    true
+  );
+  window.addEventListener("yt-page-data-updated", () => requestState(), true);
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") session.resume();

@@ -8,6 +8,7 @@
   const SETTINGS_KEY = "settings.hideWatched";
   const CATALOG_KEY = "catalog";
   const SELECTOR = core.CONTAINER_SELECTORS.join(", ");
+  const SHELF_SELECTOR = core.SHELF_SELECTORS.join(", ");
 
   let isEnabled = true;
   let cachedCatalog = {};
@@ -38,6 +39,11 @@
     for (const container of containers) {
       evaluateContainer(container);
     }
+    const shelves = document.querySelectorAll(SHELF_SELECTOR);
+    for (const shelf of shelves) {
+      const shouldHide = core.shouldHideShelf(shelf, isEnabled, cachedCatalog);
+      shelf.classList.toggle("noreplay-watched-hidden", shouldHide);
+    }
   }
 
   function requestScan() {
@@ -53,21 +59,30 @@
     });
   }
 
+  const RELEVANT_SELECTOR = `${SELECTOR}, ${SHELF_SELECTOR}`;
+
+  function isRelevantNode(node) {
+    if (!node || node.nodeType !== 1) return false;
+    try {
+      if (typeof node.matches === "function" && node.matches(RELEVANT_SELECTOR)) return true;
+      if (typeof node.querySelector === "function" && node.querySelector(RELEVANT_SELECTOR)) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }
+
   function handleMutations(mutations) {
-    let hasRelevantNodes = false;
     for (const mutation of mutations) {
-      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType === 1) {
-            hasRelevantNodes = true;
-            break;
-          }
+      if (mutation.type !== "childList" || mutation.addedNodes.length === 0) continue;
+      for (const node of mutation.addedNodes) {
+        if (isRelevantNode(node)) {
+          requestScan();
+          return;
         }
       }
-      if (hasRelevantNodes) break;
-    }
-    if (hasRelevantNodes) {
-      requestScan();
     }
   }
 
@@ -103,6 +118,7 @@
         if (changes[SETTINGS_KEY]) {
           isEnabled = Boolean(changes[SETTINGS_KEY].newValue);
           updateBodyClass();
+          requestScan();
         }
 
         if (changes[CATALOG_KEY]) {
