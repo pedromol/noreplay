@@ -2,9 +2,10 @@
   const browserApi = globalThis.browser || globalThis.chrome;
   if (!browserApi || !browserApi.runtime) return;
 
-  const SCROLL_INTERVAL_MS = 500;
-  const EMPTY_ATTEMPTS_LIMIT = 8;
-  const INITIAL_TIMEOUT_MS = 6000;
+  const SCROLL_INTERVAL_MS = 1200;
+  const SCROLL_DISTANCE_PX = 4000;
+  const EMPTY_ATTEMPTS_LIMIT = 15;
+  const INITIAL_TIMEOUT_MS = 8000;
   const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
   function extractIdFromHref(href) {
@@ -12,16 +13,23 @@
     try {
       const url = new URL(href, window.location.origin);
       if (!/(^|\.)youtube\.com$/.test(url.hostname)) return null;
-      if (url.pathname !== "/watch") return null;
-      const id = url.searchParams.get("v");
-      return id && VIDEO_ID_REGEX.test(id) ? id : null;
+      if (url.pathname === "/watch") {
+        const id = url.searchParams.get("v");
+        return id && VIDEO_ID_REGEX.test(id) ? id : null;
+      }
+      const shortsMatch = url.pathname.match(/^\/shorts\/([^/]+)$/);
+      if (shortsMatch) {
+        const id = shortsMatch[1];
+        return VIDEO_ID_REGEX.test(id) ? id : null;
+      }
+      return null;
     } catch {
       return null;
     }
   }
 
   function findDomVideoIds(seen, maxCount = Infinity) {
-    const links = document.querySelectorAll('a[href*="/watch"]');
+    const links = document.querySelectorAll('a[href*="/watch"], a[href*="/shorts/"]');
     const newIds = [];
     for (const link of links) {
       if (newIds.length >= maxCount) break;
@@ -167,7 +175,7 @@
         }
       }
 
-      window.scrollBy({ top: 1200, behavior: "smooth" });
+      window.scrollBy({ top: SCROLL_DISTANCE_PX, behavior: "smooth" });
       setTimeout(step, SCROLL_INTERVAL_MS);
     }
 
