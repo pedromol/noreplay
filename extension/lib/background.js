@@ -146,11 +146,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
       const tab = await browser.tabs.get(tabId);
       if (tab && typeof tab.url === "string") return tab.url;
     } catch {
-      /* fall back to navigation state if tab url is unavailable */
-    }
-    const currentId = navigation.current(tabId);
-    if (currentId) {
-      return `https://www.youtube.com/watch?v=${currentId}`;
+      /* tab may be gone or url unreadable */
     }
     return null;
   }
@@ -251,10 +247,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
 
     if (tabId !== undefined) {
-      const senderUrl = await resolveTabUrl(tabId);
-      if (senderUrl && /^https?:\/\//i.test(senderUrl)) {
-        return { ok: false, error: "unauthorized" };
-      }
+      return { ok: false, error: "unauthorized" };
     }
 
     if (message && message.type === "start-history-import") {

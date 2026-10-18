@@ -76,9 +76,21 @@
 
   function handleMutations(mutations) {
     for (const mutation of mutations) {
+      if (mutation.type === "attributes") {
+        const container = mutation.target.closest?.(SELECTOR);
+        if (container) {
+          requestScan();
+          return;
+        }
+        continue;
+      }
       if (mutation.type !== "childList" || mutation.addedNodes.length === 0) continue;
       for (const node of mutation.addedNodes) {
         if (isRelevantNode(node)) {
+          requestScan();
+          return;
+        }
+        if (node.nodeType === 1 && mutation.target.closest?.(SELECTOR)) {
           requestScan();
           return;
         }
@@ -104,7 +116,12 @@
       const observer = new window.MutationObserver(handleMutations);
       const root = document.documentElement || document.body;
       if (root) {
-        observer.observe(root, { childList: true, subtree: true });
+        observer.observe(root, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["href"],
+        });
       }
     }
 

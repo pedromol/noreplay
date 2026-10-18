@@ -115,8 +115,8 @@ test("offline catalog management and sync configuration message contracts", asyn
   const importRes = await browser.runtime.onMessage.fire({
     type: "catalog-import",
     records: [
-      { videoId: "v1", watched: true, watchedAt: 500 },
-      { videoId: "v2", watched: false, neverSkip: true, neverSkipAt: 600 },
+      { videoId: "abcdefghijk", watched: true, watchedAt: 500 },
+      { videoId: "lmnopqrstuv", watched: false, neverSkip: true, neverSkipAt: 600 },
     ],
   });
   assert.equal(importRes[0].imported, 2);

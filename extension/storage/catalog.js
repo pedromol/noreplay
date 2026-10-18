@@ -1,5 +1,7 @@
 export const CATALOG_KEY = "catalog";
 
+const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
 export function emptyRecord(videoId) {
   return {
     videoId,
@@ -120,7 +122,7 @@ export function createCatalog(storageArea) {
           continue;
         }
         const videoId = rec.videoId.trim();
-        if (!videoId) continue;
+        if (!videoId || !VIDEO_ID_PATTERN.test(videoId)) continue;
         const existing = all[videoId] ?? emptyRecord(videoId);
         const watched = Boolean(rec.watched) || Boolean(existing.watched);
         const neverSkip = Boolean(rec.neverSkip) || Boolean(existing.neverSkip);

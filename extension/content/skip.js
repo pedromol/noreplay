@@ -11,6 +11,8 @@
   let liveRegion = null;
   let hostRetries = 0;
   let hostRetryTimer = null;
+  let dismissedVideoId = null;
+  let stateEpoch = 0;
 
   function createSession() {
     const timer = {
@@ -111,7 +113,7 @@
 
     checkbox.addEventListener("change", () => {
       markNeverSkip();
-      dismissPopup();
+      userDismiss();
     });
 
     root.addEventListener("mousedown", (event) => {
@@ -121,21 +123,21 @@
     root.addEventListener("click", (event) => {
       if (label.contains(event.target)) return;
       event.stopPropagation();
-      dismissPopup();
+      userDismiss();
     });
 
     root.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        dismissPopup();
+        userDismiss();
         return;
       }
       if (label.contains(event.target)) return;
       if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
         event.preventDefault();
         event.stopPropagation();
-        dismissPopup();
+        userDismiss();
       }
     });
 
@@ -156,6 +158,13 @@
       overlay = null;
     }
     countEl = null;
+  }
+
+  function userDismiss() {
+    if (session.isActive()) {
+      dismissedVideoId = session.current();
+    }
+    dismissPopup();
   }
 
   function onCountdownExpired() {
@@ -208,9 +217,11 @@
     }
   }
 
-  function handleVideoState(message) {
+  function handleVideoState(message, epoch) {
+    if (epoch !== undefined && epoch !== stateEpoch) return;
     const videoId = typeof message.videoId === "string" ? message.videoId : null;
     if (videoId && message.shouldSkip === true) {
+      if (videoId === dismissedVideoId) return;
       showPopup(videoId);
       return;
     }
@@ -218,12 +229,13 @@
   }
 
   function requestState() {
+    const epoch = stateEpoch;
     try {
       const pending = browser.runtime.sendMessage({ type: "video-state-request" });
       if (pending && typeof pending.then === "function") {
         pending
           .then((state) => {
-            if (state) handleVideoState(state);
+            if (state) handleVideoState(state, epoch);
           })
           .catch(() => {});
       }
@@ -233,18 +245,27 @@
   }
 
   browser.runtime.onMessage.addListener((message) => {
-    if (message && message.type === "video-state") handleVideoState(message);
+    if (message && message.type === "video-state") handleVideoState(message, stateEpoch);
   });
 
   window.addEventListener(
     "yt-navigate-finish",
     () => {
+      stateEpoch += 1;
+      dismissedVideoId = null;
       dismissPopup();
       requestState();
     },
     true
   );
-  window.addEventListener("yt-page-data-updated", () => requestState(), true);
+  window.addEventListener(
+    "yt-page-data-updated",
+    () => {
+      stateEpoch += 1;
+      requestState();
+    },
+    true
+  );
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") session.resume();

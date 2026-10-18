@@ -494,7 +494,7 @@ test("manifest includes tabs permission for browser.tabs.get URL access", async 
   );
 });
 
-test("video-state-request falls back to navigation state when tabs.get omits url", async () => {
+test("video-state-request returns no-video state when tabs.get omits url", async () => {
   const browser = createFakeBrowser();
   browser.storage.local = createMemoryStorage({
     catalog: {
@@ -525,12 +525,13 @@ test("video-state-request falls back to navigation state when tabs.get omits url
     { tab: { id: 9 } }
   );
 
+  // resolveTabUrl returns null when tabs.get omits url (no fabrication from stale state)
   assert.deepEqual(reply, {
     type: "video-state",
-    videoId: "nextVideo123",
-    watched: true,
+    videoId: null,
+    watched: false,
     neverSkip: false,
-    shouldSkip: true,
+    shouldSkip: false,
   });
 });
 
