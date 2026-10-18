@@ -247,7 +247,12 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
 
     if (tabId !== undefined) {
-      return { ok: false, error: "unauthorized" };
+      const tabUrl = sender.tab.url;
+      const isExtensionPage =
+        typeof tabUrl === "string" && tabUrl.startsWith("moz-extension://");
+      if (!isExtensionPage) {
+        return { ok: false, error: "unauthorized" };
+      }
     }
 
     if (message && message.type === "start-history-import") {
