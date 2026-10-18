@@ -2,10 +2,10 @@
   const browserApi = globalThis.browser || globalThis.chrome;
   if (!browserApi || !browserApi.runtime) return;
 
-  const SCROLL_INTERVAL_MS = 1200;
+  const SCROLL_INTERVAL_MS = 800;
   const SCROLL_DISTANCE_PX = 4000;
-  const EMPTY_ATTEMPTS_LIMIT = 15;
-  const INITIAL_TIMEOUT_MS = 8000;
+  const EMPTY_ATTEMPTS_LIMIT = 12;
+  const INITIAL_TIMEOUT_MS = 15000;
   const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
   function extractIdFromHref(href) {
@@ -40,6 +40,31 @@
       }
     }
     return newIds;
+  }
+
+  function isYouTubeLoading() {
+    const spinners = document.querySelectorAll(
+      "ytd-continuation-item-renderer tp-yt-paper-spinner, " +
+      "ytd-continuation-item-renderer #spinner"
+    );
+    for (const s of spinners) {
+      if (s.offsetParent !== null) return true;
+    }
+    return false;
+  }
+
+  function waitUntilIdle(maxWaitMs) {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const check = () => {
+        if (isYouTubeLoading() && Date.now() - start < maxWaitMs) {
+          setTimeout(check, 300);
+        } else {
+          resolve();
+        }
+      };
+      setTimeout(check, 200);
+    });
   }
 
   function createBanner() {
@@ -128,31 +153,40 @@
       }
     }, INITIAL_TIMEOUT_MS);
 
+    async function finish() {
+      if (initialTimer) {
+        clearTimeout(initialTimer);
+        initialTimer = null;
+      }
+      const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
+      renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
+    }
+
+    async function importBatch(ids) {
+      const batchRes = await browserApi.runtime.sendMessage({
+        type: "history-import-batch",
+        videoIds: ids,
+      }).catch(() => null);
+      return batchRes && batchRes.ok;
+    }
+
     async function step() {
       if (isStopped) {
-        if (initialTimer) {
-          clearTimeout(initialTimer);
-          initialTimer = null;
-        }
-        const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
-        renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
+        await finish();
         return;
       }
 
       const remaining = target > 0 ? Math.max(0, target - seenIds.size) : Infinity;
       const newIds = findDomVideoIds(seenIds, remaining);
+
       if (newIds.length > 0) {
         if (initialTimer) {
           clearTimeout(initialTimer);
           initialTimer = null;
         }
         emptyScrolls = 0;
-        const batchRes = await browserApi.runtime.sendMessage({
-          type: "history-import-batch",
-          videoIds: newIds,
-        }).catch(() => null);
 
-        if (!batchRes || !batchRes.ok) {
+        if (!(await importBatch(newIds))) {
           isStopped = true;
           return;
         }
@@ -161,17 +195,31 @@
 
         if (target > 0 && seenIds.size >= target) {
           isStopped = true;
-          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
-          renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
+          await finish();
           return;
         }
       } else {
-        emptyScrolls += 1;
-        if (emptyScrolls >= EMPTY_ATTEMPTS_LIMIT) {
-          isStopped = true;
-          const finishRes = await browserApi.runtime.sendMessage({ type: "history-import-finish" }).catch(() => null);
-          renderFinished(finishRes && finishRes.total !== undefined ? finishRes.total : seenIds.size);
-          return;
+        if (isYouTubeLoading()) {
+          emptyScrolls = 0;
+          await waitUntilIdle(8000);
+          const moreIds = findDomVideoIds(seenIds, remaining);
+          if (moreIds.length > 0) {
+            if (await importBatch(moreIds)) {
+              renderProgress();
+            }
+            if (target > 0 && seenIds.size >= target) {
+              isStopped = true;
+              await finish();
+              return;
+            }
+          }
+        } else {
+          emptyScrolls += 1;
+          if (emptyScrolls >= EMPTY_ATTEMPTS_LIMIT) {
+            isStopped = true;
+            await finish();
+            return;
+          }
         }
       }
 
