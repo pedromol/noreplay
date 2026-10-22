@@ -18,6 +18,20 @@ test("extracts the video id when extra params are present", () => {
   );
 });
 
+test("extracts the video id from a shorts url", () => {
+  assert.equal(extractVideoId("https://www.youtube.com/shorts/abc123"), "abc123");
+  assert.equal(
+    extractVideoId("https://www.youtube.com/shorts/abc123?si=share_param"),
+    "abc123"
+  );
+});
+
+test("ignores malformed shorts urls", () => {
+  assert.equal(extractVideoId("https://www.youtube.com/shorts/"), null);
+  assert.equal(extractVideoId("https://www.youtube.com/shorts/abc/extra"), null);
+  assert.equal(extractVideoId("https://example.com/shorts/abc123"), null);
+});
+
 test("ignores non-video youtube pages", () => {
   assert.equal(extractVideoId("https://www.youtube.com/results?search_query=cats"), null);
   assert.equal(extractVideoId("https://www.youtube.com/"), null);

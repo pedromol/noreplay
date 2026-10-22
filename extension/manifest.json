@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NoReplay",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "description": "Pula videos do YouTube ja assistidos, com 5 segundos para rever.",
   "browser_specific_settings": {
     "gecko": {
@@ -13,7 +13,7 @@
       }
     }
   },
-  "permissions": ["storage", "webNavigation"],
+  "permissions": ["storage", "webNavigation", "tabs"],
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://m.youtube.com/*",
@@ -31,11 +31,13 @@
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
       "js": [
         "lib/skip-core.js",
+        "lib/hide-watched-core.js",
         "content/navigator.js",
         "content/progress.js",
-        "content/skip.js"
+        "content/skip.js",
+        "content/hide-watched.js"
       ],
-      "css": ["content/skip.css"],
+      "css": ["content/skip.css", "content/hide-watched.css"],
       "run_at": "document_idle"
     },
     {
@@ -48,6 +50,9 @@
       "run_at": "document_idle"
     }
   ],
+  "action": {
+    "default_title": "NoReplay"
+  },
   "options_ui": {
     "page": "options/options.html",
     "open_in_tab": true

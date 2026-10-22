@@ -6,8 +6,10 @@ stores the per-account watch catalog and syncs it with the extension.
 ## Run locally
 
 ```sh
-go run ./cmd/server        # serves on :8080
-go test ./... && go vet ./...
+make run                   # serves on :8080 (or go run ./cmd/server)
+make check                 # format check, go vet, and tests
+make build                 # builds static binary to bin/noreplay
+make help                  # displays all available targets
 ```
 
 Environment: `ADDR` (default `:8080`), `DATABASE_PATH` (default

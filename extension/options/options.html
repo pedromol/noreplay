@@ -1,95 +1,290 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoReplay - Account</title>
+    <title>NoReplay - Configurações</title>
     <style>
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        margin: 16px;
-        max-width: 480px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 24px auto;
+        max-width: 540px;
+        color: #202124;
+        background: #f8f9fa;
+        line-height: 1.5;
+        padding: 0 16px;
       }
-      form {
-        margin-bottom: 12px;
-        padding: 12px;
-        border: 1px solid #ddd;
+      header {
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 1.6em;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .badge-offline {
+        display: inline-block;
+        background: #e6f4ea;
+        color: #137333;
+        font-weight: 600;
+        font-size: 0.55em;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #ceead6;
+        vertical-align: middle;
+      }
+      .card {
+        margin-bottom: 16px;
+        padding: 16px 20px;
+        border: 1px solid #dadce0;
         border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(60, 64, 67, 0.05);
+      }
+      .card h2 {
+        margin-top: 0;
+        font-size: 1.15em;
+        color: #202124;
+        margin-bottom: 12px;
+      }
+      .description {
+        font-size: 0.9em;
+        color: #5f6368;
+        margin-top: 0;
+        margin-bottom: 12px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .stat-item {
+        background: #f1f3f4;
+        padding: 12px;
+        border-radius: 6px;
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 1.6em;
+        font-weight: 700;
+        color: #1a73e8;
+      }
+      .stat-label {
+        font-size: 0.85em;
+        color: #5f6368;
       }
       label {
         display: block;
         margin-bottom: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
       }
-      input, select {
+      input[type="text"], input[type="email"], input[type="password"], select {
         width: 100%;
-        padding: 6px;
-        margin-bottom: 8px;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
         box-sizing: border-box;
+        font-size: 0.95em;
+      }
+      input:focus, select:focus {
+        border-color: #1a73e8;
+        outline: none;
       }
       button {
-        padding: 8px 12px;
+        padding: 8px 14px;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #3c4043;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s;
+      }
+      button:hover {
+        background: #f1f3f4;
+        border-color: #c6c9cc;
+      }
+      button.primary {
+        background: #1a73e8;
+        color: #ffffff;
+        border-color: #1a73e8;
+      }
+      button.primary:hover {
+        background: #1765cc;
+      }
+      button.danger {
+        background: #fff;
+        color: #d93025;
+        border-color: #f28b82;
+      }
+      button.danger:hover {
+        background: #fce8e6;
+      }
+      .btn-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
       }
       .status {
         margin-top: 8px;
         min-height: 1.2em;
+        font-size: 0.85em;
+        color: #3c4043;
       }
       .hidden {
-        display: none;
+        display: none !important;
+      }
+      details {
+        margin-top: 16px;
+        border: 1px solid #dadce0;
+        border-radius: 8px;
+        padding: 14px 18px;
+        background: #ffffff;
+      }
+      summary {
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 1.05em;
+        color: #202124;
+      }
+      summary:focus {
+        outline: none;
+      }
+      .sync-section {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+      }
+      .sync-section form {
+        margin-top: 12px;
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 6px;
+      }
+      .sync-section h3 {
+        margin-top: 0;
+        font-size: 1em;
       }
     </style>
   </head>
   <body>
-    <h1>NoReplay</h1>
-    <div id="session-status" class="status">Checking session...</div>
+    <header>
+      <h1>NoReplay <span class="badge-offline">Modo Local (Offline-First)</span></h1>
+      <p class="description">
+        O NoReplay funciona 100% no seu navegador sem precisar de servidor. Seus vídeos assistidos e preferências ficam salvos localmente.
+      </p>
+    </header>
 
-    <form id="signup-form" novalidate>
-      <h2>Sign up</h2>
-      <label>
-        Email
-        <input id="signup-email" type="email" autocomplete="email" required />
+    <div class="card" id="catalog-card">
+      <h2>Catálogo Local</h2>
+      <p class="description">
+        Armazenado com segurança no armazenamento local do navegador (<code>storage.local</code>).
+      </p>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div id="stat-watched" class="stat-value">0</div>
+          <div class="stat-label">Vídeos assistidos</div>
+        </div>
+        <div class="stat-item">
+          <div id="stat-never-skip" class="stat-value">0</div>
+          <div class="stat-label">Exceções (nunca pular)</div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button id="catalog-export-btn" type="button">Exportar Backup (JSON)</button>
+        <button id="catalog-import-trigger-btn" type="button">Importar Backup (JSON)</button>
+        <input id="catalog-import-input" type="file" accept=".json,application/json" class="hidden" />
+        <button id="catalog-clear-btn" type="button" class="danger">Limpar Catálogo</button>
+      </div>
+      <div id="catalog-feedback" class="status"></div>
+    </div>
+
+    <form id="preferences-form" class="card">
+      <h2>Preferências de Exibição</h2>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+        <input id="setting-hide-watched" type="checkbox" style="width: auto; margin-bottom: 0;" />
+        Ocultar vídeos já assistidos dos feeds e recomendações do YouTube
       </label>
-      <label>
-        Password
-        <input id="signup-password" type="password" autocomplete="new-password" minlength="12" required />
-      </label>
-      <button type="submit">Sign up</button>
-      <div id="signup-feedback" class="status"></div>
+      <div id="preferences-feedback" class="status"></div>
     </form>
 
-    <form id="login-form" novalidate>
-      <h2>Log in</h2>
-      <label>
-        Email
-        <input id="login-email" type="email" autocomplete="email" required />
-      </label>
-      <label>
-        Password
-        <input id="login-password" type="password" autocomplete="current-password" required />
-      </label>
-      <button type="submit">Log in</button>
-      <div id="login-feedback" class="status"></div>
-    </form>
-
-    <form id="logout-form" class="hidden">
-      <h2>Session</h2>
-      <button type="submit">Log out</button>
-      <div id="logout-feedback" class="status"></div>
-    </form>
-
-    <form id="history-import-form">
+    <form id="history-import-form" class="card">
       <h2>Importar Histórico do YouTube</h2>
-      <label for="history-target">
-        Quantidade de vídeos
-        <select id="history-target">
-          <option value="50">Últimos 50 vídeos</option>
-          <option value="100" selected>Últimos 100 vídeos</option>
-          <option value="200">Últimos 200 vídeos</option>
-          <option value="0">Todos até parar</option>
-        </select>
-      </label>
-      <button id="history-import-btn" type="submit">Importar Histórico</button>
+      <p class="description">
+        Lê os vídeos da sua página de histórico no YouTube diretamente pelo navegador e adiciona ao seu catálogo local.
+      </p>
+      <label for="history-target">Quantidade de vídeos</label>
+      <select id="history-target">
+        <option value="50">Últimos 50 vídeos</option>
+        <option value="100" selected>Últimos 100 vídeos</option>
+        <option value="200">Últimos 200 vídeos</option>
+        <option value="0">Todos até parar</option>
+      </select>
+      <button id="history-import-btn" type="submit" class="primary">Importar Histórico</button>
       <div id="history-import-feedback" class="status"></div>
     </form>
+
+    <details id="cloud-sync-details">
+      <summary>Sincronização em Nuvem (Opcional)</summary>
+      <div class="sync-section">
+        <p class="description">
+          A sincronização em nuvem é opcional e serve para sincronizar o catálogo entre múltiplos dispositivos. O NoReplay funciona completamente sem ela.
+        </p>
+
+        <form id="server-config-form">
+          <h3>Servidor de Sincronização</h3>
+          <label for="server-url">URL do Servidor NoReplay</label>
+          <div style="display: flex; gap: 8px;">
+            <input id="server-url" type="text" placeholder="https://noreplay.local" />
+            <button id="server-url-btn" type="submit" style="white-space: nowrap;">Salvar URL</button>
+          </div>
+          <div id="server-url-feedback" class="status"></div>
+        </form>
+
+        <div id="session-status" class="status" style="font-weight: 500; margin: 12px 0;">Verificando sessão...</div>
+
+        <form id="signup-form" novalidate>
+          <h3>Criar Conta</h3>
+          <label>
+            Email
+            <input id="signup-email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Senha (mínimo 12 caracteres)
+            <input id="signup-password" type="password" autocomplete="new-password" minlength="12" required />
+          </label>
+          <button type="submit">Cadastrar</button>
+          <div id="signup-feedback" class="status"></div>
+        </form>
+
+        <form id="login-form" novalidate>
+          <h3>Entrar na Conta</h3>
+          <label>
+            Email
+            <input id="login-email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Senha
+            <input id="login-password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Entrar</button>
+          <div id="login-feedback" class="status"></div>
+        </form>
+
+        <form id="logout-form" class="hidden">
+          <h3>Sessão Ativa</h3>
+          <button type="submit">Sair da Conta</button>
+          <div id="logout-feedback" class="status"></div>
+        </form>
+      </div>
+    </details>
 
     <script type="module" src="options.js"></script>
   </body>

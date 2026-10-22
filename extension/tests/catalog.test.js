@@ -97,3 +97,102 @@ test("bulkMarkWatched marks multiple videos as watched while preserving existing
   const empty = await catalog.bulkMarkWatched([], 2000);
   assert.deepEqual(empty, []);
 });
+
+test("stats returns correct counts for empty and populated catalog", async () => {
+  const catalog = createCatalog(createMemoryStorage());
+
+  const emptyStats = await catalog.stats();
+  assert.deepEqual(emptyStats, { total: 0, watched: 0, neverSkip: 0 });
+
+  await catalog.markWatched("v1", 100);
+  await catalog.markNeverSkip("v2", 200);
+  await catalog.markWatched("v2", 300);
+
+  const stats = await catalog.stats();
+  assert.deepEqual(stats, { total: 2, watched: 2, neverSkip: 1 });
+});
+
+test("clear removes all records from storage", async () => {
+  const storage = createMemoryStorage({ playtimeSeconds: { v1: 25 } });
+  const catalog = createCatalog(storage);
+
+  await catalog.markWatched("v1", 100);
+  assert.equal((await catalog.list()).length, 1);
+
+  const cleared = await catalog.clear();
+  assert.equal(cleared, true);
+  assert.equal((await catalog.list()).length, 0);
+  assert.deepEqual(await storage.get(CATALOG_KEY), {});
+  assert.deepEqual(await storage.get("playtimeSeconds"), {});
+});
+
+test("importCatalog performs monotonic merge and preserves existing exceptions", async () => {
+  const catalog = createCatalog(createMemoryStorage());
+
+  await catalog.markWatched("videoId0001", 1000);
+  await catalog.markNeverSkip("videoId0002", 500);
+
+  const res = await catalog.importCatalog([
+    { videoId: "videoId0001", watched: true, watchedAt: 2000, neverSkip: false },
+    { videoId: "videoId0002", watched: true, watchedAt: 1500, neverSkip: false },
+    { videoId: "videoId0003", watched: false, neverSkip: true, neverSkipAt: 3000 },
+  ]);
+
+  assert.equal(res.imported, 3);
+  assert.equal(res.total, 3);
+
+  const v1 = await catalog.get("videoId0001");
+  assert.equal(v1.watched, true);
+  assert.equal(v1.watchedAt, 2000);
+
+  const v2 = await catalog.get("videoId0002");
+  assert.equal(v2.watched, true);
+  assert.equal(v2.watchedAt, 1500);
+  assert.equal(v2.neverSkip, true);
+  assert.equal(v2.neverSkipAt, 500);
+
+  const v3 = await catalog.get("videoId0003");
+  assert.equal(v3.watched, false);
+  assert.equal(v3.neverSkip, true);
+  assert.equal(v3.neverSkipAt, 3000);
+});
+
+test("importCatalog skips malformed records gracefully", async () => {
+  const catalog = createCatalog(createMemoryStorage());
+
+  const res = await catalog.importCatalog([
+    null,
+    "not-an-object",
+    {},
+    { videoId: "" },
+    { videoId: "  " },
+    { videoId: "short" },
+    { videoId: "validVideo1", watched: true },
+  ]);
+
+  assert.equal(res.imported, 1);
+  assert.equal(res.total, 1);
+  assert.equal((await catalog.get("validVideo1")).watched, true);
+});
+
+test("importCatalog clamps negative timestamps to 0 and future timestamps to now", async () => {
+  const catalog = createCatalog(createMemoryStorage());
+
+  await catalog.importCatalog(
+    [
+      { videoId: "v_negative1", watched: true, watchedAt: -500, neverSkip: true, neverSkipAt: -100 },
+      { videoId: "v_future001", watched: true, watchedAt: 50000, neverSkip: true, neverSkipAt: 60000 },
+    ],
+    1000
+  );
+
+  const vNeg = await catalog.get("v_negative1");
+  assert.equal(vNeg.watchedAt, 0);
+  assert.equal(vNeg.neverSkipAt, 0);
+
+  const vFuture = await catalog.get("v_future001");
+  assert.equal(vFuture.watchedAt, 1000);
+  assert.equal(vFuture.neverSkipAt, 1000);
+});
+
+

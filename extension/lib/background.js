@@ -3,7 +3,7 @@ import { createNavigationController } from "./navigation.js";
 import { createProgressTracker } from "./progress.js";
 import { extractVideoId } from "./video.js";
 import { isHistoryUrl, isValidVideoId, parseTargetCount } from "./history-core.js";
-import { createSyncClient, DEFAULT_BASE_URL } from "../sync/client.js";
+import { createSyncClient, sanitizeBaseUrl, DEFAULT_BASE_URL } from "../sync/client.js";
 import { createSyncEngine } from "../sync/engine.js";
 
 export const HISTORY_FILTER = {
@@ -144,10 +144,11 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
   async function resolveTabUrl(tabId) {
     try {
       const tab = await browser.tabs.get(tabId);
-      return tab ? tab.url ?? null : null;
+      if (tab && typeof tab.url === "string") return tab.url;
     } catch {
-      return null;
+      /* tab may be gone or url unreadable */
     }
+    return null;
   }
 
   function onHistoryStateUpdated(details) {
@@ -245,6 +246,15 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
       }
     }
 
+    if (tabId !== undefined) {
+      const tabUrl = sender.tab.url;
+      const isExtensionPage =
+        typeof tabUrl === "string" && tabUrl.startsWith("moz-extension://");
+      if (!isExtensionPage) {
+        return { ok: false, error: "unauthorized" };
+      }
+    }
+
     if (message && message.type === "start-history-import") {
       const targetCount = parseTargetCount(message.targetCount);
       const createdTab = await browser.tabs.create({ url: "https://www.youtube.com/feed/history" });
@@ -254,6 +264,42 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
         importedIds: new Set(),
       };
       return { ok: true, tabId: createdTab.id, targetCount };
+    }
+
+    if (message && message.type === "catalog-stats") {
+      return await catalog.stats();
+    }
+    if (message && message.type === "catalog-export") {
+      const records = await catalog.list();
+      return { records };
+    }
+    if (message && message.type === "catalog-import") {
+      const records = Array.isArray(message.records) ? message.records : [];
+      const res = await catalog.importCatalog(records, now());
+      if (res && res.imported > 0) {
+        triggerSync();
+      }
+      return res;
+    }
+    if (message && message.type === "catalog-clear") {
+      await catalog.clear();
+      return { ok: true };
+    }
+    if (message && message.type === "get-sync-config") {
+      const baseUrl = await getBaseUrl();
+      const token = await getToken();
+      return { baseUrl, hasToken: Boolean(token) };
+    }
+    if (message && message.type === "set-server-url") {
+      const rawUrl = typeof message.baseUrl === "string" ? message.baseUrl.trim() : "";
+      const sanitized = sanitizeBaseUrl(rawUrl);
+      if (sanitized) {
+        await browser.storage.local.set({ [BASE_URL_KEY]: sanitized });
+      } else {
+        await browser.storage.local.remove(BASE_URL_KEY);
+      }
+      const res = await configureSync();
+      return { ok: true, baseUrl: res.baseUrl };
     }
 
     if (
@@ -272,6 +318,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
     if (message && message.type === "account-signup") {
       const res = await syncClient.signup({ email: message.email, password: message.password });
+      if (!res.ok && res.status !== 403) {
+        console.error("signup error:", res.status, res.statusText);
+      }
       if (res.status === 403) {
         return { ok: res.ok, status: res.status, retryAfter: res.retryAfter, code: "signup_not_allowed" };
       }
@@ -279,6 +328,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
     if (message && message.type === "account-login") {
       const res = await syncClient.login({ email: message.email, password: message.password });
+      if (!res.ok && res.status === 0) {
+        console.error("login network error:", res.statusText);
+      }
       if (res.ok) {
         try {
           const body = await res.json();
@@ -305,6 +357,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
       if (res.status === 403) {
         return { ok: false, status: 403, code: "signup_not_allowed" };
       }
+      console.error("login unexpected status:", res.status, res.statusText);
       return { ok: res.ok, status: res.status, retryAfter: res.retryAfter };
     }
     if (message && message.type === "account-logout") {
@@ -347,6 +400,13 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
   browser.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated, HISTORY_FILTER);
   if (browser.tabs && browser.tabs.onRemoved) {
     browser.tabs.onRemoved.addListener(onTabRemoved);
+  }
+  if (browser.action && browser.action.onClicked) {
+    browser.action.onClicked.addListener(() => {
+      if (browser.runtime && browser.runtime.openOptionsPage) {
+        browser.runtime.openOptionsPage();
+      }
+    });
   }
 
   const initPromise = init();

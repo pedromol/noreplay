@@ -418,7 +418,7 @@ Dependências: U4 e U1 não têm pré-requisitos; U2←U1; U3←U2; U5←U4; U6�
 - **Goal:** Imagem Docker constrói e roda o backend; manifests aplicam o deploy no cluster.
 - **Requirements:** R12.
 - **Dependencies:** U6.
-- **Files:** `server/Dockerfile`, `server/deploy/k8s/deployment.yaml`, `server/deploy/k8s/service.yaml`, `server/deploy/k8s/configmap.example.yaml`
+- **Files:** `server/Dockerfile`, `server/deploy/k8s/deployment.yaml`
 - **Approach:**
   1. Dockerfile multi-stage: build do binário Go e imagem final enxuta rodando como usuário não-root; volume para o arquivo SQLite com permissão restrita a esse usuário.
   2. Manifests: Deployment com exatamente uma réplica e estratégia `Recreate` (SQLite em volume RWO não suporta dois pods; escala horizontal fora do MVP), probe de health (U4), Service, e Ingress com terminação TLS — pré-requisito de deploy, já que o token trafega no header; a extensão só envia o token para origem `https` (loopback liberado só em desenvolvimento, KTD4).
@@ -446,7 +446,7 @@ Comandos por área (reencontrados nos scaffolds criados por U1 e U4):
 | Extensão — empacotar | `web-ext lint` (em `extension/`) | Manifesto MV3 válido |
 | Backend — testes | `go test ./...` (em `server/`) | Schema, auth, merge, isolamento (U4–U6) |
 | Backend — estática | `go vet ./...` (em `server/`) | Padrão de código Go |
-| Deploy | `kubectl apply --dry-run=client -f server/deploy/k8s/` | Manifests válidos (U8) |
+| Deploy | `kubectl apply --dry-run=client -f server/deploy/k8s/deployment.yaml` | Manifests válidos (U8) |
 
 Smoke manual em Firefox real (`web-ext run`), checklist no `extension/README.md`: AE1–AE8. É a única prova do comportamento contra o YouTube ao vivo — automação contra o site real está fora do escopo (Alternatives Considered).
 
