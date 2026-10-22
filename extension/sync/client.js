@@ -70,6 +70,7 @@ export function createSyncClient({ baseUrl, fetch: fetchImpl } = {}) {
       };
       return result;
     } catch (e) {
+      console.error("sync request network error:", target, e && e.message ? e.message : "network error");
       return { ok: false, status: 0, statusText: e && e.message ? e.message : "network error", json: async () => ({}), text: async () => "" };
     }
   }

@@ -42,33 +42,32 @@ mounted/ referenced Secrets — never literal values in versioned manifests (KTD
 ## 3. Apply the manifests
 
 ```sh
-# 1. Example ConfigMap -> real ConfigMap (edit the allowlist e-mail first)
-cp server/deploy/k8s/configmap.example.yaml server/deploy/k8s/configmap.yaml
-$EDITOR server/deploy/k8s/configmap.yaml
+# 1. Edit the ConfigMap section of the single manifest (allowlist e-mail first)
+$EDITOR server/deploy/k8s/deployment.yaml
 
 # 2. Create the TLS Secret for the Ingress host (example with cert-manager,
 #    or any other way of producing a kubernetes.io/tls Secret)
-#    The Secret NAME must match spec.tls[].secretName in ingress.yaml.
+#    The Secret NAME must match spec.tls[].secretName in deployment.yaml.
 
 # 3. Apply everything
-kubectl apply -f server/deploy/k8s/
+kubectl apply -f server/deploy/k8s/deployment.yaml
 
 # Validate without touching the cluster
-kubectl apply --dry-run=client -f server/deploy/k8s/
+kubectl apply --dry-run=client -f server/deploy/k8s/deployment.yaml
 ```
 
 Manifests are namespace-agnostic (no `namespace:` field): they apply to the
 current namespace of the kubeconfig/context.
 
-Files in `deploy/k8s/`:
+Every resource lives in the single file `deploy/k8s/deployment.yaml`:
 
-| File                     | Kind                   | Notes                                             |
-| ------------------------ | ---------------------- | ------------------------------------------------- |
-| `deployment.yaml`        | Deployment             | `replicas: 1`, `strategy: Recreate`, probes, PVC  |
-| `service.yaml`           | Service (ClusterIP)    | 8080 → pod 8080                                   |
-| `ingress.yaml`           | Ingress                | TLS termination + HTTPS redirect                  |
-| `configmap.example.yaml` | ConfigMap (example)    | Copy to `configmap.yaml` before applying          |
-| `pvc.yaml`               | PersistentVolumeClaim  | RWO, holds `/data/noreplay.db`                    |
+| Resource          | Kind                   | Notes                                             |
+| ----------------- | ---------------------- | ------------------------------------------------- |
+| `noreplay`        | Deployment             | `replicas: 1`, `strategy: Recreate`, probes        |
+| `noreplay`        | Service (ClusterIP)    | 8080 → pod 8080                                   |
+| `noreplay`        | Ingress                | TLS termination + HTTPS redirect                  |
+| `noreplay-config` | ConfigMap              | Env vars — edit `SIGNUP_EMAIL` before applying     |
+| `noreplay-data`   | PersistentVolumeClaim  | RWO, holds `/data/noreplay.db`                    |
 
 ## 4. TLS is mandatory
 
@@ -81,7 +80,7 @@ The extension authenticates with a bearer token in the `Authorization` header
   `noreplay-tls` Secret) and force-redirects HTTP to HTTPS. Deploying on plain
   HTTP outside loopback is invalid.
 
-Replace `noreplay.example.com` in `ingress.yaml` with your host and point DNS
+Replace `noreplay.example.com` in `deployment.yaml` with your host and point DNS
 accordingly. `ingressClassName: nginx` is an example — match your cluster's
 ingress controller.
 
@@ -96,16 +95,16 @@ allows attachment to one node anyway. Therefore:
   starts — a `RollingUpdate` would briefly run two writers.
 
 ## 6. Persistent state
-
-`pvc.yaml` creates a `ReadWriteOnce` claim mounted at `/data`; the app writes
-the database to `DATABASE_PATH=/data/noreplay.db`. The pod also uses a
-`readOnlyRootFilesystem` with an `emptyDir` at `/tmp`, so nothing is written
-inside the container layer. Deleting/recreating the Pod keeps the data;
-deleting the PVC (or the namespace) does not.
+The PersistentVolumeClaim in `deployment.yaml` creates a `ReadWriteOnce` claim
+mounted at `/data`; the app writes the database to
+`DATABASE_PATH=/data/noreplay.db`. The pod also uses a `readOnlyRootFilesystem`
+with an `emptyDir` at `/tmp`, so nothing is written inside the container layer.
+Deleting/recreating the Pod keeps the data; deleting the PVC (or the namespace)
+does not.
 
 The `storageClassName` is omitted to use the cluster default — it is
-cluster-specific; set it explicitly if needed (see comments in `pvc.yaml`).
-
+cluster-specific; set it explicitly if needed (see comments in
+`deployment.yaml`).
 The container runs as non-root (`65532`), and the pod sets `fsGroup: 65532` so
 the mounted volume is writable by that user.
 

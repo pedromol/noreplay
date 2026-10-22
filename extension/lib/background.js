@@ -318,6 +318,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
     if (message && message.type === "account-signup") {
       const res = await syncClient.signup({ email: message.email, password: message.password });
+      if (!res.ok && res.status !== 403) {
+        console.error("signup error:", res.status, res.statusText);
+      }
       if (res.status === 403) {
         return { ok: res.ok, status: res.status, retryAfter: res.retryAfter, code: "signup_not_allowed" };
       }
@@ -325,6 +328,9 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
     }
     if (message && message.type === "account-login") {
       const res = await syncClient.login({ email: message.email, password: message.password });
+      if (!res.ok && res.status === 0) {
+        console.error("login network error:", res.statusText);
+      }
       if (res.ok) {
         try {
           const body = await res.json();
@@ -351,6 +357,7 @@ export function createBackground({ browser, now = () => Date.now(), fetch } = {}
       if (res.status === 403) {
         return { ok: false, status: 403, code: "signup_not_allowed" };
       }
+      console.error("login unexpected status:", res.status, res.statusText);
       return { ok: res.ok, status: res.status, retryAfter: res.retryAfter };
     }
     if (message && message.type === "account-logout") {

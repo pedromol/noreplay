@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"strconv"
@@ -102,35 +103,40 @@ type errorResponse struct {
 }
 
 func (s *server) handleSignup(w http.ResponseWriter, r *http.Request) {
+	slog.Info("signup attempt", "method", r.Method)
 	email, password, ok := s.readCredentials(w, r)
 	if !ok {
 		return
 	}
-
+	slog.Info("signup attempt", "email", email, "allowed", auth.CheckAllowlist(s.signupEmail, email))
 	if !auth.CheckAllowlist(s.signupEmail, email) {
+		slog.Warn("signup rejected: not allowed", "email", email)
 		writeError(w, http.StatusForbidden, "signup_not_allowed")
 		return
 	}
 	if len(password) < auth.MinPasswordLength {
+		slog.Warn("signup rejected: password too short", "email", email)
 		writeError(w, http.StatusBadRequest, "password_too_short")
 		return
 	}
-
 	hash, err := auth.HashPassword(password)
 	if err != nil {
+		slog.Error("signup failed: hash error", "email", email, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error")
 		return
 	}
 	user, err := s.store.CreateUser(r.Context(), email, hash)
 	if err != nil {
 		if errors.Is(err, store.ErrEmailTaken) {
+			slog.Warn("signup rejected: email taken", "email", email)
 			writeError(w, http.StatusForbidden, "signup_not_allowed")
 			return
 		}
+		slog.Error("signup failed: create user", "email", email, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error")
 		return
 	}
-
+	slog.Info("signup successful", "user_id", user.ID, "email", email)
 	token, ok := s.issueSession(w, r, user.ID)
 	if !ok {
 		return
@@ -139,26 +145,29 @@ func (s *server) handleSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	slog.Info("login attempt")
 	email, password, ok := s.readCredentials(w, r)
 	if !ok {
 		return
 	}
 	if email == "" {
+		slog.Warn("login rejected: empty email")
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
-
 	user, err := s.store.GetUserByEmail(r.Context(), email)
 	if err != nil {
+		slog.Warn("login failed: user not found", "email", email)
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
 	match, err := auth.VerifyPassword(user.PasswordHash, password)
 	if err != nil || !match {
+		slog.Warn("login failed: invalid credentials", "email", email)
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
-
+	slog.Info("login successful", "user_id", user.ID, "email", email)
 	token, ok := s.issueSession(w, r, user.ID)
 	if !ok {
 		return

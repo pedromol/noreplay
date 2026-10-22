@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"noreplay/server/internal/store"
@@ -44,6 +45,7 @@ type syncPushResponse struct {
 }
 
 // handleSyncPush merges an authenticated batch into the caller's catalog
+// handleSyncPush merges an authenticated batch into the caller's catalog
 // (KTD6 monotonic merge) and reports how many records were applied.
 func (s *server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 	user, ok := UserFromContext(r.Context())
@@ -51,17 +53,20 @@ func (s *server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-
+	slog.Info("sync push attempt", "user_id", user.ID)
 	var req syncPushRequest
 	if err := ReadJSONBody(w, r, &req, s.maxBody); err != nil {
 		if errors.Is(err, ErrBodyTooLarge) {
+			slog.Warn("sync push rejected: body too large", "user_id", user.ID)
 			writeError(w, http.StatusRequestEntityTooLarge, "body_too_large")
 			return
 		}
+		slog.Warn("sync push rejected: invalid request", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
 	if len(req.Records) > maxSyncBatchRecords {
+		slog.Warn("sync push rejected: batch too large", "user_id", user.ID, "count", len(req.Records))
 		writeError(w, http.StatusBadRequest, "batch_too_large")
 		return
 	}
@@ -69,6 +74,7 @@ func (s *server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 	records := make([]store.SyncRecord, 0, len(req.Records))
 	for _, rec := range req.Records {
 		if rec.VideoID == "" {
+			slog.Warn("sync push rejected: empty videoId", "user_id", user.ID)
 			writeError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}
@@ -82,9 +88,11 @@ func (s *server) handleSyncPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := s.store.PushRecords(r.Context(), user.ID, records, s.now()); err != nil {
+		slog.Error("sync push failed: store error", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error")
 		return
 	}
+	slog.Info("sync push successful", "user_id", user.ID, "merged", len(records))
 	writeJSON(w, http.StatusOK, syncPushResponse{Merged: len(records)})
 }
 
@@ -97,13 +105,14 @@ func (s *server) handleSyncPull(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-
+	slog.Info("sync pull attempt", "user_id", user.ID)
 	records, err := s.store.ListCatalog(r.Context(), user.ID)
 	if err != nil {
+		slog.Error("sync pull failed: store error", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error")
 		return
 	}
-
+	slog.Info("sync pull successful", "user_id", user.ID, "records", len(records))
 	items := make([]syncCatalogItem, 0, len(records))
 	for _, rec := range records {
 		items = append(items, syncCatalogItem{

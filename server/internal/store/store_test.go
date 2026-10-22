@@ -420,4 +420,3 @@ func TestCatalogMergeTimestampNegativoEhAparado(t *testing.T) {
 		t.Errorf("never_skip_at = %d, want 0 (never_skip=false must zero timestamp)", final.NeverSkipAt)
 	}
 }
-

@@ -2,10 +2,10 @@
   const browserApi = globalThis.browser || globalThis.chrome;
   if (!browserApi || !browserApi.runtime) return;
 
-  const SCROLL_INTERVAL_MS = 800;
-  const SCROLL_DISTANCE_PX = 4000;
-  const EMPTY_ATTEMPTS_LIMIT = 12;
-  const INITIAL_TIMEOUT_MS = 15000;
+  const SCROLL_INTERVAL_MS = 2000;
+  const SCROLL_DISTANCE_PX = 2000;
+  const EMPTY_ATTEMPTS_LIMIT = 60;
+  const INITIAL_TIMEOUT_MS = 30000;
   const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
   function extractIdFromHref(href) {

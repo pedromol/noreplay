@@ -31,7 +31,7 @@ type Options struct {
 	MaxBodyBytes int64
 }
 
-func NewRouter(s *store.Store, opts Options) *http.ServeMux {
+func NewRouter(s *store.Store, opts Options) http.Handler {
 	srv := newServer(s, opts)
 
 	mux := http.NewServeMux()
@@ -43,5 +43,8 @@ func NewRouter(s *store.Store, opts Options) *http.ServeMux {
 	mux.Handle("POST /v1/logout", srv.requireAuth(http.HandlerFunc(srv.handleLogout)))
 	mux.Handle("POST /v1/sync/push", srv.requireAuth(http.HandlerFunc(srv.handleSyncPush)))
 	mux.Handle("GET /v1/sync/pull", srv.requireAuth(http.HandlerFunc(srv.handleSyncPull)))
-	return mux
+
+	// CORS middleware so the Firefox extension (moz-extension:// origin)
+	// can call the API across origins. Preflight OPTIONS is answered here.
+	return corsMiddleware(mux)
 }

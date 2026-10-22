@@ -47,6 +47,21 @@ test("extractHistoryVideoIds extracts unique IDs from href strings and elements"
   ]);
 });
 
+test("extractHistoryVideoIds extracts shorts IDs and deduplicates across formats", () => {
+  const items = [
+    "https://www.youtube.com/shorts/aBc_12-3456",
+    "/shorts/xyz12345678",
+    "/shorts/xyz12345678", // duplicate shorts
+    "/watch?v=xyz12345678", // same video via watch url
+    { href: "https://www.youtube.com/shorts/11122233344?si=share" },
+    "/shorts/",
+    "/shorts/short",
+  ];
+
+  const ids = extractHistoryVideoIds(items);
+  assert.deepEqual(ids, ["aBc_12-3456", "xyz12345678", "11122233344"]);
+});
+
 test("parseTargetCount parses numbers and enforces bounds", () => {
   assert.equal(parseTargetCount(50), 50);
   assert.equal(parseTargetCount("200"), 200);
