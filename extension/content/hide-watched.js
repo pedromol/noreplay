@@ -3,63 +3,26 @@
   if (!browserApi || !browserApi.storage || !browserApi.storage.local) return;
 
   const core = globalThis.NoReplayHideWatched;
-  if (!core) return;
+  const controllerApi = globalThis.NoReplayHideWatchedController;
+  if (!core || !controllerApi) return;
 
   const SETTINGS_KEY = "settings.hideWatched";
   const CATALOG_KEY = "catalog";
   const SELECTOR = core.CONTAINER_SELECTORS.join(", ");
   const SHELF_SELECTOR = core.SHELF_SELECTORS.join(", ");
+  const RELEVANT_SELECTOR = `${SELECTOR}, ${SHELF_SELECTOR}`;
 
   let isEnabled = true;
   let cachedCatalog = {};
-  let scheduledScan = false;
 
-  function updateBodyClass() {
-    const target = document.body || document.documentElement;
-    if (target) {
-      target.classList.toggle("noreplay-hide-watched-enabled", isEnabled);
-    }
-  }
-
-  function evaluateContainer(container) {
-    if (!container || typeof container.querySelector !== "function") return;
-    const videoId = core.extractVideoIdFromElement(container);
-    if (!videoId) {
-      container.classList.remove("noreplay-watched-hidden");
-      return;
-    }
-
-    const record = cachedCatalog[videoId];
-    const shouldHide = core.shouldHideVideo(record, true);
-    container.classList.toggle("noreplay-watched-hidden", shouldHide);
-  }
-
-  function scanAllContainers() {
-    const containers = document.querySelectorAll(SELECTOR);
-    for (const container of containers) {
-      evaluateContainer(container);
-    }
-    const shelves = document.querySelectorAll(SHELF_SELECTOR);
-    for (const shelf of shelves) {
-      const shouldHide = core.shouldHideShelf(shelf, isEnabled, cachedCatalog);
-      shelf.classList.toggle("noreplay-watched-hidden", shouldHide);
-    }
-  }
-
-  function requestScan() {
-    if (scheduledScan) return;
-    scheduledScan = true;
-    const scheduleFn =
-      typeof window.requestAnimationFrame === "function"
-        ? window.requestAnimationFrame
-        : (fn) => setTimeout(fn, 16);
-    scheduleFn(() => {
-      scheduledScan = false;
-      scanAllContainers();
-    });
-  }
-
-  const RELEVANT_SELECTOR = `${SELECTOR}, ${SHELF_SELECTOR}`;
+  const controller = controllerApi.createHideWatchedController({
+    core,
+    document,
+    window,
+    isEnabled: () => isEnabled,
+    catalog: () => cachedCatalog,
+    pathname: () => window.location.pathname,
+  });
 
   function isRelevantNode(node) {
     if (!node || node.nodeType !== 1) return false;
@@ -79,7 +42,7 @@
       if (mutation.type === "attributes") {
         const container = mutation.target.closest?.(SELECTOR);
         if (container) {
-          requestScan();
+          controller.requestScan();
           return;
         }
         continue;
@@ -87,11 +50,11 @@
       if (mutation.type !== "childList" || mutation.addedNodes.length === 0) continue;
       for (const node of mutation.addedNodes) {
         if (isRelevantNode(node)) {
-          requestScan();
+          controller.requestScan();
           return;
         }
         if (node.nodeType === 1 && mutation.target.closest?.(SELECTOR)) {
-          requestScan();
+          controller.requestScan();
           return;
         }
       }
@@ -109,8 +72,8 @@
       cachedCatalog = {};
     }
 
-    updateBodyClass();
-    scanAllContainers();
+    controller.updateBodyClass();
+    controller.scanAllContainers();
 
     if (typeof window.MutationObserver === "function") {
       const observer = new window.MutationObserver(handleMutations);
@@ -134,19 +97,19 @@
 
         if (changes[SETTINGS_KEY]) {
           isEnabled = Boolean(changes[SETTINGS_KEY].newValue);
-          updateBodyClass();
-          requestScan();
+          controller.updateBodyClass();
+          controller.requestScan();
         }
 
         if (changes[CATALOG_KEY]) {
           cachedCatalog = changes[CATALOG_KEY].newValue || {};
-          requestScan();
+          controller.requestScan();
         }
       });
     }
 
-    window.addEventListener("yt-navigate-finish", () => requestScan(), true);
-    window.addEventListener("yt-page-data-updated", () => requestScan(), true);
+    window.addEventListener("yt-navigate-finish", () => controller.requestScan(), true);
+    window.addEventListener("yt-page-data-updated", () => controller.requestScan(), true);
   }
 
   if (document.readyState === "loading") {

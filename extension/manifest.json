@@ -31,7 +31,9 @@
       "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
       "js": [
         "lib/skip-core.js",
+        "lib/history-path-core.js",
         "lib/hide-watched-core.js",
+        "lib/hide-watched-controller.js",
         "content/navigator.js",
         "content/progress.js",
         "content/skip.js",
