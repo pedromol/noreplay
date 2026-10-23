@@ -95,9 +95,7 @@
     }
 
     return {
-      shouldRun,
       updateBodyClass,
-      evaluateContainer,
       scanAllContainers,
       requestScan,
     };

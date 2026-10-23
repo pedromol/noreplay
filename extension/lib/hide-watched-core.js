@@ -71,18 +71,23 @@
     return progressPercent >= RESUME_PROGRESS_HIDE_PERCENT;
   }
 
+  function recordDecision(record) {
+    if (!record || typeof record !== "object") return null;
+    if (record.neverSkip) return false;
+    if (record.watched) return true;
+    return null;
+  }
+
   function shouldHideVideo(record, isFeatureEnabled, progressPercent) {
     if (!isFeatureEnabled) return false;
-    if (record && typeof record === "object") {
-      if (record.neverSkip) return false;
-      if (record.watched) return true;
-    }
+    const decision = recordDecision(record);
+    if (decision !== null) return decision;
     return shouldHideByProgress(progressPercent);
   }
 
   function shouldHideItem(container, record, isFeatureEnabled) {
     if (!isFeatureEnabled) return false;
-    const decided = record && (record.neverSkip || record.watched);
+    const decided = recordDecision(record) !== null;
     const progressPercent = decided
       ? null
       : extractProgressPercentFromElement(container);

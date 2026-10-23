@@ -158,7 +158,7 @@ test("controller clears the hidden class and skips progress reads when disabled"
 test("controller hides cards by catalog state and progress while honoring neverSkip", () => {
   const watched = makeCard({ videoId: "watched1234", progressPercent: 0 });
   const partial = makeCard({ videoId: "partial1234", progressPercent: 30 });
-  const below = makeCard({ videoId: "below12345", progressPercent: 10 });
+  const below = makeCard({ videoId: "below123456", progressPercent: 10 });
   const neverSkip = makeCard({ videoId: "neverSkip12", progressPercent: 90 });
   const doc = makeDocument([watched.element, partial.element, below.element, neverSkip.element]);
   const controller = makeController({
@@ -174,6 +174,7 @@ test("controller hides cards by catalog state and progress while honoring neverS
   assert.equal(watched.element.classList.contains("noreplay-watched-hidden"), true);
   assert.equal(partial.element.classList.contains("noreplay-watched-hidden"), true);
   assert.equal(below.element.classList.contains("noreplay-watched-hidden"), false);
+  assert.equal(below.stats.progressQueries, 1);
   assert.equal(neverSkip.element.classList.contains("noreplay-watched-hidden"), false);
   assert.equal(doc.body.classList.contains("noreplay-hide-watched-enabled"), true);
 });
