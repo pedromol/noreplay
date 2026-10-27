@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NoReplay",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Pula videos do YouTube ja assistidos, com 5 segundos para rever.",
   "browser_specific_settings": {
     "gecko": {

@@ -45,6 +45,16 @@ test("PROGRESS_SELECTORS covers legacy desktop, mobile, and 2026 progress bars",
       "yt-thumbnail-overlay-progress-bar-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment"
     )
   );
+  assert.ok(
+    PROGRESS_SELECTORS.includes(
+      "yt-lockup-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment"
+    )
+  );
+  assert.ok(
+    PROGRESS_SELECTORS.includes(
+      ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment"
+    )
+  );
   assert.equal(PROGRESS_SELECTOR, PROGRESS_SELECTORS.join(", "));
 });
 

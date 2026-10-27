@@ -19,6 +19,8 @@
     "ytd-thumbnail-overlay-resume-playback-renderer #progress",
     "ytm-thumbnail-overlay-resume-playback-renderer #progress",
     "yt-thumbnail-overlay-progress-bar-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+    "yt-lockup-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+    ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
   ];
   const PROGRESS_SELECTOR = PROGRESS_SELECTORS.join(", ");
   const RESUME_PROGRESS_HIDE_PERCENT = 25;
