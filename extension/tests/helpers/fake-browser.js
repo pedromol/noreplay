@@ -42,6 +42,7 @@ export function createFakeBrowser({ tabs = {} } = {}) {
         sentMessages.push({ tabId, message });
       },
     },
+    _tabs: tabs,
     sentMessages,
     setTab(tabId, tab) {
       tabs[tabId] = tab;

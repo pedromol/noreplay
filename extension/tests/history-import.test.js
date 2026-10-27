@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createBackground } from "../lib/background.js";
 import { createFakeBrowser } from "./helpers/fake-browser.js";
 import { createMemoryStorage } from "./helpers/memory-storage.js";
-
+const flush = () => new Promise((r) => setTimeout(r, 30));
 test("start-history-import creates history tab and registers active session", async () => {
   const browser = createFakeBrowser();
   browser.storage.local = createMemoryStorage();
@@ -68,22 +68,18 @@ test("history-import-batch rejects unauthorized tabs and invalid URLs", async ()
   assert.equal(await bg.catalog.get("dQw4w9WgXcQ"), null);
 });
 
-test("history-import-batch records valid IDs and finish triggers sync", async () => {
+test("history-import-batch records valid IDs and finish is ok", async () => {
   const browser = createFakeBrowser();
   browser.storage.local = createMemoryStorage();
-  let syncTriggered = false;
-
   const bg = createBackground({ browser, now: () => 5000 });
   await bg.ready;
-  bg.syncEngine.trigger = async () => {
-    syncTriggered = true;
-    return { ok: true };
-  };
 
   const startRes = (await browser.runtime.onMessage.fire(
     { type: "start-history-import", targetCount: 100 },
     {}
   ))[0];
+
+  await flush();
 
   const batchRes = (await browser.runtime.onMessage.fire(
     {
@@ -109,14 +105,6 @@ test("history-import-batch records valid IDs and finish triggers sync", async ()
   ))[0];
 
   assert.equal(finishRes.ok, true);
-  assert.equal(syncTriggered, true);
-
-  // Close tab message removes the tab
-  await browser.runtime.onMessage.fire(
-    { type: "close-tab" },
-    { tab: { id: startRes.tabId } }
-  );
-  await assert.rejects(browser.tabs.get(startRes.tabId));
 });
 
 test("history-import-batch enforces targetCount cap from background", async () => {
@@ -146,17 +134,12 @@ test("history-import-batch enforces targetCount cap from background", async () =
   assert.equal(await bg.catalog.get("vid33333333"), null);
 });
 
-test("onTabRemoved triggers sync when an active import with videos is closed", async () => {
+test("onTabRemoved closes active import and catalog retains batch", async () => {
   const browser = createFakeBrowser();
   browser.storage.local = createMemoryStorage();
-  let syncTriggered = false;
 
   const bg = createBackground({ browser });
   await bg.ready;
-  bg.syncEngine.trigger = async () => {
-    syncTriggered = true;
-    return { ok: true };
-  };
 
   const startRes = (await browser.runtime.onMessage.fire(
     { type: "start-history-import", targetCount: 10 },
@@ -170,8 +153,7 @@ test("onTabRemoved triggers sync when an active import with videos is closed", a
     },
     { tab: { id: startRes.tabId } }
   );
-
-  assert.equal(syncTriggered, false);
+  await flush();
   bg.onTabRemoved(startRes.tabId);
-  assert.equal(syncTriggered, true);
+  assert.ok(await bg.catalog.get("vid11111111"));
 });

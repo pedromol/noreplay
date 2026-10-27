@@ -21,20 +21,19 @@ test("background message contract used by the options page", async () => {
   browser.storage.local = storage;
   const bg = createBackground({ browser, now: () => 1000 });
   await bg.ready;
-  bg.syncClient.login = async () => ({ ok: false, status: 401 });
-  bg.syncClient.signup = async () => ({ ok: false, status: 429, retryAfter: "10" });
-  bg.syncClient.logout = async () => ({ ok: true, status: 204 });
 
   let res = await browser.runtime.onMessage.fire({ type: "account-status" });
   assert.deepEqual(res[0], { sessionActive: false, expired: false });
 
   res = await browser.runtime.onMessage.fire({ type: "account-login", email: "a", password: "badbadbadbad" });
-  assert.equal(res[0].status, 401);
-  assert.equal(res[0].code, "invalid_credentials");
+  assert.equal(res[0].ok, false);
+  assert.equal(res[0].status, 403);
+  assert.equal(res[0].code, "sync_disabled");
 
   res = await browser.runtime.onMessage.fire({ type: "account-signup", email: "a", password: "badbadbadbad" });
-  assert.equal(res[0].status, 429);
-  assert.equal(res[0].retryAfter, "10");
+  assert.equal(res[0].ok, false);
+  assert.equal(res[0].status, 403);
+  assert.equal(res[0].code, "sync_disabled");
 
   res = await browser.runtime.onMessage.fire({ type: "account-logout" });
   assert.equal(res[0].ok, true);
@@ -138,20 +137,21 @@ test("offline catalog management and sync configuration message contracts", asyn
 
   // 6. Get sync config (default without token)
   let configRes = await browser.runtime.onMessage.fire({ type: "get-sync-config" });
-  assert.equal(configRes[0].baseUrl, "https://noreplay.local");
+  assert.equal(configRes[0].baseUrl, "https://noreplay.local/");
   assert.equal(configRes[0].hasToken, false);
 
-  // 7. Set custom server URL
+  // 7. Set custom server URL — sync disabled, always returns default
   const setRes = await browser.runtime.onMessage.fire({
     type: "set-server-url",
     baseUrl: "https://my-server.example.com",
   });
   assert.equal(setRes[0].ok, true);
-  assert.equal(setRes[0].baseUrl, "https://my-server.example.com/");
+  assert.equal(setRes[0].baseUrl, "https://noreplay.local/");
 
-  // Verify custom URL persists in storage and config
+  // Config always reports the fixed default URL
   configRes = await browser.runtime.onMessage.fire({ type: "get-sync-config" });
-  assert.equal(configRes[0].baseUrl, "https://my-server.example.com/");
+  assert.equal(configRes[0].baseUrl, "https://noreplay.local/");
+  assert.equal(configRes[0].hasToken, false);
 });
 
 test("admin and options messages are rejected when sent from web page tabs", async () => {
