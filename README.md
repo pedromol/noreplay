@@ -1,55 +1,53 @@
 # NoReplay
 
-Firefox MV3 extension + Go service that skips already-watched YouTube videos, with a local catalog, monotonic synchronization (KTD6), and Shorts support.
+Firefox MV3 extension that skips already-watched YouTube videos upon opening, offering a 5-second countdown grace period to rewatch if desired, with offline-first storage and cross-device synchronization via Firefox Sync (Mozilla account).
 
 ## Structure
 
 ```
 .
 ├── AGENTS.md          # Development guidelines and invariants
-├── extension/         # Firefox extension (MV3, ES modules, background scripts)
-│   ├── content/       # Content scripts (skip, progress, history, hide-watched, navigator)
-│   ├── lib/           # Shared modules (video.js, background.js, navigation.js, hide-watched-core.js, ...)
-│   ├── sync/          # Client/sync engine with server
-│   ├── storage/       # Local catalog (browser.storage.local)
-│   ├── options/       # Options page
-│   ├── tests/         # node:test (lint + lint:manifest + build via web-ext)
-│   └── manifest.json  # MV3, tab/storage permissions; no service worker
-├── server/            # Go HTTP (net/http, modernc.org/sqlite, CGO-free, WAL)
-│   ├── cmd/server/    # Entry point
-│   ├── internal/      # httpapi, store, auth (argon2id, SHA-256 tokens 30d)
-│   ├── deploy/        # Dockerfile + Kubernetes (deployment.yaml, k8s/)
-│   └── README.md      # Local execution (make run / check / build)
+├── manifest.json      # Manifest V3 (background.scripts, storage, tabs)
+├── background.js      # Background script entry point
+├── lib/               # Background modules (progress.js, navigation.js, video.js, history-core.js, ...)
+├── storage/           # Catalog storage (browser.storage.sync with storage.local fallback)
+├── content/           # Content scripts & styles (skip, progress, navigator, history, hide-watched)
+├── options/           # Options page & backup management (export/import/clear)
+├── tests/             # node:test suite (fake browser & storage helpers)
+├── _locales/          # Localization (en, pt_BR)
 └── docs/
     └── plans/         # Preserved project plans
 ```
 
-## Goals
+## Features
 
-- **Offline-first**: The extension operates without an account via `browser.storage.local`. Detection, 5-second countdown, playtime accumulation, and "never skip" exceptions all work offline.
-- **Watch threshold**: A video is marked as watched when active playtime reaches the smaller of 30 seconds or 25% of its duration. Seeking/skipping does not count toward playtime; playtime accumulates across sessions.
-- **Graceful counting**: The overlay appears on watched videos without exceptions. Clicking anywhere cancels the skip and lets the video play. Checking "never skip" marks an exception and allows the video to play.
-- **Monotonic synchronization (KTD6)**: Merge uses boolean OR for `watched`/`neverSkip`, keeps `max(stored, incoming)` for timestamps (clamped to the server clock), resets timestamps to 0 if flags are false. Coalesces consecutive sync calls within an active sync cycle. Logout isolates the session (does not erase the local catalog).
-- **Shorts support**: `extractVideoId` resolves `/shorts/<id>`. Containers `ytd-shorts-lockup-viewer`/`ytd-reel-item-renderer` are hidden. History and progress handle deduplication between `/watch?v=` and `/shorts/`.
-- **Security**: Tokens are passed only in the `Authorization: Bearer` header over TLS. Signup is restricted to `SIGNUP_EMAIL` (fail-closed). Rate limiting of 5 requests/minute on `/v1/signup` and `/v1/login`.
+- **Offline-First**: Operates completely in your browser without requiring an external server or account. Watched history is stored locally in `browser.storage.local`.
+- **Firefox Sync (Mozilla Account)**: When signed into Firefox with a Mozilla account, watched status and exceptions sync seamlessly across devices using `browser.storage.sync` with monotonic merge semantics.
+- **Watch Threshold**: Videos are marked as watched when active playback accumulates the smaller of 30 seconds or 25% of duration. Seeking or skipping does not count; active playtime accumulates across sessions.
+- **5-Second Countdown Grace Period**: An overlay gives you 5 seconds to cancel the skip by clicking anywhere or pressing Escape. You can also mark "never skip this video" to permanently whitelist it.
+- **Hide Watched Videos**: Optional display preference to automatically hide watched videos and shelves from YouTube feeds and search results.
+- **YouTube History Import**: One-click import directly reads your YouTube history page in the browser and batches items into your catalog.
+- **YouTube Shorts Support**: Works on both regular `/watch?v=` videos and `/shorts/<id>`.
 
-## Related docs and references
+## Development
 
-- `AGENTS.md`: Architectural invariants (trust boundary, monotonic merge, passkeys, rate limiting, SQLite WAL/foreign_keys, fail-closed). Do not edit without re-reading it.
-- `extension/README.md`: Build instructions (`npm test`, `npm run lint`, `npm run lint:manifest`, `npm run build` via web-ext) and manifest details.
-- `server/README.md` / `Makefile`: Local execution (`make run`/`check`/`build`; static binary `bin/noreplay`); environment variables `ADDR`, `DATABASE_PATH`, `SIGNUP_EMAIL`.
-- `docs/plans/`: Preserved project plans as per documentation rules.
-- `extension/manifest.json`: MV3 (`background.scripts`, no service workers). Requires tab/URL permissions for `browser.tabs.get` (canonical video ID resolution).
-
-## Quick verification
-
-```sh
-# Extension
-cd extension && npm test && npm run lint && npm run lint:manifest
-
-# Server
-cd server && go test ./... && go vet ./... && make check
+```bash
+npm install          # Install dev dependencies (eslint + web-ext)
+npm test             # Run unit tests (node --test tests/)
+npm run lint         # Run ESLint
+npm run lint:manifest  # Validate Manifest V3 via web-ext lint
+npm run build        # Build extension package via web-ext build
 ```
 
----
-*Created 2026-10-22. Based on AGENTS.md and existing code; does not replace plans in `docs/plans/` or existing tests.*
+### Running Locally in Firefox
+
+```bash
+npx web-ext run
+```
+
+This launches a clean Firefox profile with NoReplay loaded as a temporary add-on.
+
+## Related Documentation
+
+- `AGENTS.md`: Architectural invariants (trust boundary, monotonic merge, quota handling, review rules).
+- `docs/plans/`: Preserved project plans and RFCs.
