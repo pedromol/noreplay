@@ -1,5 +1,5 @@
 {
-  "name": "noreplay-extension",
+  "name": "noreplay",
   "version": "0.1.12",
   "private": true,
   "description": "NoReplay Firefox extension: skip YouTube videos you already watched.",
@@ -8,7 +8,7 @@
     "test": "node --test tests/",
     "lint": "eslint .",
     "lint:manifest": "web-ext lint",
-    "build": "web-ext build --overwrite-dest --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md'"
+    "build": "web-ext build --overwrite-dest --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md' 'docs' 'docs/**' 'AGENTS.md' 'build.sh'"
   },
   "devDependencies": {
     "eslint": "^9.13.0",

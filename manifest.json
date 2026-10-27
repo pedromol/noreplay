@@ -9,19 +9,14 @@
       "id": "noreplay@local",
       "strict_min_version": "115.0",
       "data_collection_permissions": {
-        "required": ["none"],
-        "optional": ["authenticationInfo", "browsingActivity"]
+        "required": ["none"]
       }
     }
   },
   "permissions": ["storage", "webNavigation", "tabs"],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://m.youtube.com/*",
-    "https://noreplay.local/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "http://[::1]/*"
+    "https://m.youtube.com/*"
   ],
   "background": {
     "scripts": ["background.js"],

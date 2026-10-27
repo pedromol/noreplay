@@ -126,62 +126,6 @@ test("storage.onChanged ignores changes from local area", async () => {
   assert.equal(merged.vid1, undefined);
 });
 
-test("account handlers are sync-disabled stubs", async () => {
-  const { browser } = makeStorage();
-  const bg = createBackground({ browser });
-  await bg.ready;
-
-  const status = (await browser.runtime.onMessage.fire({ type: "account-status" }))[0];
-  assert.deepEqual(status, { sessionActive: false, expired: false });
-
-  const login = (await browser.runtime.onMessage.fire({
-    type: "account-login",
-    email: "a@b.c",
-    password: "password123",
-  }))[0];
-  assert.equal(login.ok, false);
-  assert.equal(login.status, 403);
-  assert.equal(login.code, "sync_disabled");
-
-  const signup = (await browser.runtime.onMessage.fire({
-    type: "account-signup",
-    email: "a@b.c",
-    password: "password123",
-  }))[0];
-  assert.equal(signup.ok, false);
-  assert.equal(signup.status, 403);
-  assert.equal(signup.code, "sync_disabled");
-
-  const logout = (await browser.runtime.onMessage.fire({ type: "account-logout" }))[0];
-  assert.equal(logout.ok, true);
-});
-
-test("get-sync-config reports fixed default URL, no token", async () => {
-  const { browser } = makeStorage();
-  const bg = createBackground({ browser });
-  await bg.ready;
-
-  const config = (await browser.runtime.onMessage.fire({ type: "get-sync-config" }))[0];
-  assert.equal(config.baseUrl, "https://noreplay.local/");
-  assert.equal(config.hasToken, false);
-});
-
-test("set-server-url returns ok but always default URL", async () => {
-  const { browser } = makeStorage();
-  const bg = createBackground({ browser });
-  await bg.ready;
-
-  const set = (await browser.runtime.onMessage.fire({
-    type: "set-server-url",
-    baseUrl: "https://my-server.example.com",
-  }))[0];
-  assert.equal(set.ok, true);
-  assert.equal(set.baseUrl, "https://noreplay.local/");
-
-  const config = (await browser.runtime.onMessage.fire({ type: "get-sync-config" }))[0];
-  assert.equal(config.baseUrl, "https://noreplay.local/");
-});
-
 test("catalog CRUD methods work offline", async () => {
   const { browser } = makeStorage();
   const bg = createBackground({ browser });
