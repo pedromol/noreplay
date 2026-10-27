@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoReplay - Configurações</title>
+    <title></title>
     <style>
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -176,116 +176,109 @@
   </head>
   <body>
     <header>
-      <h1>NoReplay <span class="badge-offline">Modo Local (Offline-First)</span></h1>
-      <p class="description">
-        O NoReplay funciona 100% no seu navegador sem precisar de servidor. Seus vídeos assistidos e preferências ficam salvos localmente.
-      </p>
+      <h1><span data-i18n="extension_name"></span> <span class="badge-offline" data-i18n="badge_offline"></span></h1>
+      <p class="description" data-i18n="offline_description"></p>
     </header>
 
     <div class="card" id="catalog-card">
-      <h2>Catálogo Local</h2>
-      <p class="description">
-        Armazenado com segurança no armazenamento local do navegador (<code>storage.local</code>).
-      </p>
+      <h2 data-i18n="catalog_local_title"></h2>
+      <p class="description" data-i18n="catalog_local_description"></p>
       <div class="stats-grid">
         <div class="stat-item">
           <div id="stat-watched" class="stat-value">0</div>
-          <div class="stat-label">Vídeos assistidos</div>
+          <div class="stat-label" data-i18n="stat_watched"></div>
         </div>
         <div class="stat-item">
           <div id="stat-never-skip" class="stat-value">0</div>
-          <div class="stat-label">Exceções (nunca pular)</div>
+          <div class="stat-label" data-i18n="stat_never_skip"></div>
         </div>
       </div>
       <div class="btn-group">
-        <button id="catalog-export-btn" type="button">Exportar Backup (JSON)</button>
-        <button id="catalog-import-trigger-btn" type="button">Importar Backup (JSON)</button>
+        <button id="catalog-export-btn" type="button" data-i18n="catalog_export_btn"></button>
+        <button id="catalog-import-trigger-btn" type="button" data-i18n="catalog_import_btn"></button>
         <input id="catalog-import-input" type="file" accept=".json,application/json" class="hidden" />
-        <button id="catalog-clear-btn" type="button" class="danger">Limpar Catálogo</button>
+        <button id="catalog-clear-btn" type="button" class="danger" data-i18n="catalog_clear_btn"></button>
       </div>
       <div id="catalog-feedback" class="status"></div>
     </div>
 
     <form id="preferences-form" class="card">
-      <h2>Preferências de Exibição</h2>
+      <h2 data-i18n="preferences_title"></h2>
       <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
         <input id="setting-hide-watched" type="checkbox" style="width: auto; margin-bottom: 0;" />
-        Ocultar vídeos já assistidos dos feeds e recomendações do YouTube
+        <span data-i18n="preferences_hide_watched"></span>
       </label>
       <div id="preferences-feedback" class="status"></div>
     </form>
 
     <form id="history-import-form" class="card">
-      <h2>Importar Histórico do YouTube</h2>
-      <p class="description">
-        Lê os vídeos da sua página de histórico no YouTube diretamente pelo navegador e adiciona ao seu catálogo local.
-      </p>
-      <label for="history-target">Quantidade de vídeos</label>
+      <h2 data-i18n="history_import_title"></h2>
+      <p class="description" data-i18n="history_import_description"></p>
+      <label for="history-target" data-i18n="history_import_quantity"></label>
       <select id="history-target">
-        <option value="50">Últimos 50 vídeos</option>
-        <option value="100" selected>Últimos 100 vídeos</option>
-        <option value="200">Últimos 200 vídeos</option>
-        <option value="0">Todos até parar</option>
+        <option value="50" data-i18n="history_import_last_50"></option>
+        <option value="100" selected data-i18n="history_import_last_100"></option>
+        <option value="200" data-i18n="history_import_last_200"></option>
+        <option value="0" data-i18n="history_import_all_until_stop"></option>
       </select>
-      <button id="history-import-btn" type="submit" class="primary">Importar Histórico</button>
+      <button id="history-import-btn" type="submit" class="primary" data-i18n="history_import_btn"></button>
       <div id="history-import-feedback" class="status"></div>
     </form>
 
     <details id="cloud-sync-details">
-      <summary>Sincronização em Nuvem (Opcional)</summary>
+      <summary data-i18n="cloud_sync_title"></summary>
       <div class="sync-section">
-        <p class="description">
-          A sincronização em nuvem é opcional e serve para sincronizar o catálogo entre múltiplos dispositivos. O NoReplay funciona completamente sem ela.
-        </p>
+        <p class="description" data-i18n="cloud_sync_description"></p>
 
         <form id="server-config-form">
-          <h3>Servidor de Sincronização</h3>
-          <label for="server-url">URL do Servidor NoReplay</label>
+          <h3 data-i18n="sync_server_title"></h3>
+          <label for="server-url" data-i18n="sync_server_url_label"></label>
           <div style="display: flex; gap: 8px;">
             <input id="server-url" type="text" placeholder="https://noreplay.local" />
-            <button id="server-url-btn" type="submit" style="white-space: nowrap;">Salvar URL</button>
+            <button id="server-url-btn" type="submit" style="white-space: nowrap;" data-i18n="sync_server_url_save"></button>
           </div>
           <div id="server-url-feedback" class="status"></div>
         </form>
 
-        <div id="session-status" class="status" style="font-weight: 500; margin: 12px 0;">Verificando sessão...</div>
+        <div id="session-status" class="status" style="font-weight: 500; margin: 12px 0;" data-i18n="session_checking"></div>
 
         <form id="signup-form" novalidate>
-          <h3>Criar Conta</h3>
+          <h3 data-i18n="signup_title"></h3>
           <label>
-            Email
+            <span data-i18n="signup_email_label"></span>
             <input id="signup-email" type="email" autocomplete="email" required />
           </label>
           <label>
-            Senha (mínimo 12 caracteres)
+            <span data-i18n="signup_password_label"></span>
             <input id="signup-password" type="password" autocomplete="new-password" minlength="12" required />
           </label>
-          <button type="submit">Cadastrar</button>
+          <button type="submit" data-i18n="signup_btn"></button>
           <div id="signup-feedback" class="status"></div>
         </form>
 
         <form id="login-form" novalidate>
-          <h3>Entrar na Conta</h3>
+          <h3 data-i18n="login_title"></h3>
           <label>
-            Email
+            <span data-i18n="login_email_label"></span>
             <input id="login-email" type="email" autocomplete="email" required />
           </label>
           <label>
-            Senha
+            <span data-i18n="login_password_label"></span>
             <input id="login-password" type="password" autocomplete="current-password" required />
           </label>
-          <button type="submit">Entrar</button>
+          <button type="submit" data-i18n="login_btn"></button>
           <div id="login-feedback" class="status"></div>
         </form>
 
         <form id="logout-form" class="hidden">
-          <h3>Sessão Ativa</h3>
-          <button type="submit">Sair da Conta</button>
+          <h3 data-i18n="active_session_title"></h3>
+          <button type="submit" data-i18n="logout_btn"></button>
           <div id="logout-feedback" class="status"></div>
         </form>
       </div>
     </details>
 
+    <script src="i18n-polyfill.js"></script>
     <script type="module" src="options.js"></script>
   </body>
 </html>

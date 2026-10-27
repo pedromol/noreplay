@@ -67,20 +67,30 @@
   function buildOverlay() {
     const root = document.createElement("div");
     root.className = "noreplay-skip-overlay";
+    const browser = globalThis.browser || globalThis.chrome;
+    function gm(key, subs) {
+      try {
+        if (browser && browser.i18n && typeof browser.i18n.getMessage === "function") {
+          const m = browser.i18n.getMessage(key, subs);
+          if (m) return m;
+        }
+      } catch {}
+      return "";
+    }
     root.setAttribute("role", "dialog");
-    root.setAttribute("aria-label", "Vídeo já assistido");
+    root.setAttribute("aria-label", gm("skip_overlay_aria_label") || "Already watched video");
     root.setAttribute("tabindex", "-1");
 
     const title = document.createElement("div");
     title.className = "noreplay-skip-title";
-    title.textContent = "Vídeo já assistido";
+    title.textContent = gm("skip_overlay_title") || "Already watched";
 
     const count = document.createElement("div");
     count.className = "noreplay-skip-count";
 
     const notice = document.createElement("div");
     notice.className = "noreplay-skip-notice";
-    notice.textContent = "O próximo vídeo sugerido começa sozinho ao chegar a zero.";
+    notice.textContent = gm("skip_overlay_notice") || "The next suggested video will play automatically when it reaches zero.";
 
     const label = document.createElement("label");
     label.className = "noreplay-skip-exception";
@@ -90,14 +100,14 @@
     checkbox.className = "noreplay-skip-checkbox";
 
     const checkboxText = document.createElement("span");
-    checkboxText.textContent = "nunca pular esse vídeo";
+    checkboxText.textContent = gm("skip_overlay_never_skip") || "never skip this video";
 
     label.appendChild(checkbox);
     label.appendChild(checkboxText);
 
     const hint = document.createElement("div");
     hint.className = "noreplay-skip-hint";
-    hint.textContent = "Clique em qualquer lugar para assistir de novo.";
+    hint.textContent = gm("skip_overlay_hint") || "Click anywhere to watch again.";
 
     root.appendChild(title);
     root.appendChild(count);
@@ -147,7 +157,15 @@
   function renderCountdown(remainingMs) {
     if (!countEl) return;
     const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
-    countEl.textContent = `Próximo vídeo em ${seconds}s…`;
+    const browser = globalThis.browser || globalThis.chrome;
+    let msg = "";
+    try {
+      if (browser && browser.i18n && typeof browser.i18n.getMessage === "function") {
+        msg = browser.i18n.getMessage("skip_countdown", [String(seconds)]);
+      }
+    } catch {}
+    if (!msg) msg = `Next video in ${seconds}s…`;
+    countEl.textContent = msg;
   }
 
   function dismissPopup() {
@@ -205,11 +223,20 @@
       dismissPopup();
       return;
     }
-    announce(
-      "Vídeo já assistido. O próximo vídeo sugerido começa sozinho em " +
-        `${Math.round(skipCore.SKIP_GRACE_MS / 1000)} segundos. ` +
-        "Clique ou pressione Escape para assistir de novo; use Tab para marcar nunca pular esse vídeo."
-    );
+    const browser = globalThis.browser || globalThis.chrome;
+    let msg = "";
+    try {
+      if (browser && browser.i18n && typeof browser.i18n.getMessage === "function") {
+        msg = browser.i18n.getMessage("skip_announcement", [String(Math.round(skipCore.SKIP_GRACE_MS / 1000))]);
+      }
+    } catch {}
+    if (!msg) {
+      msg =
+        "Already watched video. The next suggested video will play automatically in " +
+        `${Math.round(skipCore.SKIP_GRACE_MS / 1000)} seconds. ` +
+        "Click or press Escape to watch again; use Tab to mark never skip this video.";
+    }
+    announce(msg);
     try {
       overlay.focus({ preventScroll: true });
     } catch {

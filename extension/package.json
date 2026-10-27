@@ -1,6 +1,6 @@
 {
   "name": "noreplay-extension",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "private": true,
   "description": "NoReplay Firefox extension: skip YouTube videos you already watched.",
   "type": "module",
