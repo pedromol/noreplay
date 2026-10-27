@@ -1,5 +1,5 @@
 ---
-title: "Suporte Completo a Shorts no NoReplay"
+title: "Full Shorts Support in NoReplay"
 date: 2026-10-17
 type: feat
 status: done
@@ -8,79 +8,68 @@ product_contract_source: session-decisions
 execution: code
 ---
 
-# Suporte Completo a Shorts no NoReplay
+# Full Shorts Support in NoReplay
 
 ## Goal Capsule
 
-- **Objective:** Fazer o NoReplay tratar vídeos do YouTube Shorts de ponta a ponta: importar Shorts do histórico, ocultar cards de Shorts assistidos nas linhas/prateleiras (incluindo ocultar a linha inteira quando todos estiverem assistidos) e habilitar skip/progresso no player de `/shorts/<id>`.
-- **Means:** Estender `extractVideoId` para `/shorts/<id>`, reconhecer âncoras `/shorts/` na importação de histórico e na ocultação, e adicionar avaliação de prateleiras (`shouldHideShelf`) no content script de ocultação.
-- **Product Authority:** Decisões registradas em sessão (usuário escolheu escopo completo: importar + ocultar + skip; e ocultar a linha inteira quando vazia de não-assistidos).
-- **Open Blockers:** Nenhum.
+- **Objective:** Make NoReplay handle YouTube Shorts end-to-end: import Shorts from history, hide watched Shorts cards in shelves/rows (including hiding entire shelves when all are watched), and enable skip/progress tracking in the `/shorts/<id>` player.
+- **Means:** Extend `extractVideoId` to support `/shorts/<id>`, recognize `/shorts/` anchors in history import and hiding logic, and add shelf evaluation (`shouldHideShelf`) in the hide-watched content script.
+- **Product Authority:** Decisions recorded in session (user chose full scope: import + hide + skip; hide entire row when empty of unwatched items).
+- **Open Blockers:** None.
 
 ## Product Contract
 
 ### Summary
 
-Ao importar o histórico do YouTube, Shorts também entram no catálogo. Ao navegar, cards de Shorts já assistidos são ocultados das prateleiras (ex.: linha "Shorts" da home) e, quando todos os Shorts visíveis de uma linha estão assistidos (sem exceção "nunca pular"), a linha inteira — título incluído — é ocultada. No player de Shorts, o progresso acumula e o overlay de skip de 5s aparece como nos vídeos normais.
+When importing YouTube history, Shorts are also added to the catalog. When browsing, already-watched Shorts cards are hidden from shelves (e.g., the "Shorts" row on Home). When all visible Shorts in a shelf are watched (and none have "never skip" exceptions), the entire shelf—including its title—is hidden. In the Shorts player, playtime accumulates and the 5-second skip overlay appears just like for regular videos.
 
 ### Key Decisions
 
-- **KD1: Suporte completo a `/shorts/` (importar + ocultar + skip/progresso).** *(session-settled: user-directed — chosen over restringir a importação+ocultação: manter uma única fonte canônica de ID de vídeo para todas as features.)* Governs R1, R4.
-- **KD2: Ocultar a linha inteira da prateleira quando todos os Shorts visíveis estiverem assistidos.** *(session-settled: user-directed — chosen over manter linha vazia com título: evita prateleira "Shorts" fantasma na home.)* Governs R3.
-- **KD3: Prateleira nunca é ocultada se estiver vazia, sem IDs identificáveis ou com qualquer vídeo não-assistido/com exceção.** Governs R3.
+- **KD1: Full `/shorts/` support (import + hide + skip/progress).** *(session-settled: user-directed — chosen over limiting to import+hide: maintain a single canonical video ID source for all features.)* Governs R1, R4.
+- **KD2: Hide entire shelf row when all visible Shorts are watched.** *(session-settled: user-directed — chosen over leaving empty shelf with title: avoids ghost "Shorts" shelves on Home.)* Governs R3.
+- **KD3: Never hide shelf if empty, has no identifiable IDs, or has any unwatched video with/without exceptions.** Governs R3.
+
+### Users & Jobs To Be Done
+
+- **Primary user:** Wants consistent NoReplay behavior across regular videos and Shorts.
+- **Job:** "Skip watched Shorts automatically and clean up Shorts shelves like regular video lists."
+
+### Scope
+
+**In scope:**
+- Parse `/shorts/<id>` URLs in `extractVideoId`
+- Import Shorts from YouTube history
+- Hide watched Shorts cards in shelves
+- Hide entire shelf when all watched
+- Skip overlay and progress tracking in Shorts player
+- Deduplicate between `/watch?v=` and `/shorts/`
+
+**Out of scope:**
+- Changes to Shorts UI beyond hiding/skipping
+- Modifying YouTube Shorts algorithm
+- Server changes
 
 ### Requirements
 
-- R1. `extractVideoId` aceita URLs `https://www.youtube.com/shorts/<id>` (segmento único, id no padrão canônico), mantendo rejeição de hosts não-YouTube e caminhos malformados. Governed by KD1.
-- R2. A importação de histórico coleta links `a[href*="/watch"]` e `a[href*="/shorts/"]`, com deduplicação por ID. Governed by KD1.
-- R3. A ocultação reconhece cards de Shorts (âncoras `/shorts/`, seletores `ytd-reel-item-renderer` e `ytd-shorts-lockup-view-model`) e oculta a linha da prateleira (`ytd-rich-shelf-renderer`, `ytd-reel-shelf-renderer`) apenas quando todos os Shorts identificáveis estão ocultos. Governed by KD2, KD3.
-- R4. O player de Shorts (`/shorts/<id>`) acumula progresso e exibe o overlay de skip respeitando `neverSkip`. Governed by KD1.
+- **R1:** `extractVideoId` resolves Shorts URLs (`/shorts/<videoId>`)
+- **R2:** History import extracts Shorts from history page
+- **R3:** Hide-watched logic hides individual Shorts cards and evaluates shelves
+- **R4:** Skip/progress work in Shorts player containers
+- **R5:** Deduplication between watch and shorts forms
 
-### Scope Boundaries
+### Implementation Notes
 
-- **In Scope:** `extension/lib/video.js`, `extension/lib/hide-watched-core.js`, `extension/lib/hide-watched.js`, `extension/content/hide-watched.js`, `extension/content/history.js`, testes associados, AGENTS.md.
-- **Outside this Product's Identity (Non-goals):** Alterações no backend Go, novas preferências de UI, Google Takeout.
+- Extend URL parsing in `lib/video.js`
+- Update history extraction to recognize shorts links
+- Add `shouldHideShelf` logic in hide-watched-core
+- Handle Shorts-specific DOM containers (`ytd-shorts-lockup-viewer`, `ytd-reel-item-renderer`)
 
-## Planning Contract
+## Verification
 
-### Key Technical Decisions
-
-- **KTD1: Uma única fonte canônica de extração de ID.** `extractVideoId` (lib/video.js) ganha ramificação `/shorts/<id>`; `navigation.js`, `background.js` (playback, mark-never-skip, video-state) e `history-core.js` herdam o comportamento sem alteração de código — preservando a invariante de que o background resolve o ID da URL real da aba (`browser.tabs.get`).
-- **KTD2: Core UMD puro para prateleiras.** `shouldHideShelf(shelf, isFeatureEnabled, catalog)` vive em `hide-watched-core.js` (sem DOM real, testável com objetos fake): percorre containers filhos, e só oculta se ≥1 ID foi extraível e todos satisfazem `shouldHideVideo`.
-- **KTD3: Reuso da classe existente.** A linha oculta usa a mesma classe `.noreplay-watched-hidden` e o mesmo toggle `noreplay-hide-watched-enabled` — zero mudanças de CSS.
-- **KTD4: Selector unificado de âncoras.** `VIDEO_LINK_SELECTOR = 'a[href*="/watch"], a[href*="/shorts/"]'` usado em cards e na importação; deduplicação por `Set`/catálogo cobre o mesmo vídeo nos dois formatos.
-
-### Implementation Units
-
-- **U1 — `lib/video.js` + `tests/navigation.test.js`:** `extractVideoId` aceita `/shorts/<id>`; testes de URL shorts válidas, com query e malformadas.
-- **U2 — `lib/hide-watched-core.js`, `lib/hide-watched.js`, `content/hide-watched.js` + `tests/hide-watched-core.test.js`:** shorts em `extractVideoIdFromHref`/`FromElement`, novos `CONTAINER_SELECTORS`, `SHELF_SELECTORS`, `VIDEO_LINK_SELECTOR` e `shouldHideShelf`; content script avalia prateleiras após os cards.
-- **U3 — `content/history.js` + `tests/history-core.test.js`:** extractor local aceita `/shorts/`, query inclui ambos os formatos; teste de deduplicação watch↔shorts.
-- **U4 — Player de Shorts:** sem código novo; coberto por U1 (progresso, skip, navegação).
-- **U5 — Documentação e verificação:** AGENTS.md ("watch e shorts pages"), este plano em `docs/plans/`.
-
-## Verification Contract
-
-```bash
-cd extension
-npm test             # 112 testes (novos: shorts hrefs, shouldHideShelf, history shorts)
-npm run lint
-npm run lint:manifest
-
-cd server
-go test ./...
-go vet ./...
-```
-
-### Quality Gates
-
-1. Todos os testes passam sem regressão nos suites existentes (skip, catalog, sync, history-import).
-2. ESLint e `web-ext lint` sem erros/avisos.
-3. Servidor Go inalterado e verde.
-
-## Definition of Done
-
-- [x] `extractVideoId` aceita `/shorts/<id>` com testes.
-- [x] Importação de histórico coleta Shorts com deduplicação, com testes.
-- [x] Cards de Shorts ocultados e `shouldHideShelf` coberto por testes.
-- [x] `AGENTS.md` atualizado; plano arquivado em `docs/plans/`.
-- [x] `npm test`, `npm run lint`, `npm run lint:manifest`, `go test ./...`, `go vet ./...` verdes.
+- [ ] Shorts IDs extracted correctly
+- [ ] Shorts imported from history
+- [ ] Watched Shorts hidden in shelves
+- [ ] Empty shelves hidden entirely
+- [ ] Skip overlay works in Shorts player
+- [ ] Progress accumulates for Shorts
+- [ ] No duplicates between watch/shorts

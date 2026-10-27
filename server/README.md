@@ -1,23 +1,18 @@
-# noreplay backend (server/)
+# NoReplay Backend (server/)
 
-Go HTTP service (`net/http`, SQLite via `modernc.org/sqlite` — no CGO) that
-stores the per-account watch catalog and syncs it with the extension.
+Go HTTP service (`net/http`, SQLite via `modernc.org/sqlite` — CGO-free) that stores per-account watch catalogs and syncs them with the extension.
 
 ## Run locally
 
 ```sh
-make run                   # serves on :8080 (or go run ./cmd/server)
-make check                 # format check, go vet, and tests
-make build                 # builds static binary to bin/noreplay
-make help                  # displays all available targets
+make run                   # Serve on :8080 (or go run ./cmd/server)
+make check                 # Format check, go vet, and tests
+make build                 # Build static binary to bin/noreplay
+make help                  # Display all available targets
 ```
 
-Environment: `ADDR` (default `:8080`), `DATABASE_PATH` (default
-`./data/noreplay.db`), `SIGNUP_EMAIL` (signup allowlist; empty/unset disables
-signup, fail-closed). Endpoint: `GET /healthz`.
+Environment variables: `ADDR` (default `:8080`), `DATABASE_PATH` (default `./data/noreplay.db`), `SIGNUP_EMAIL` (signup allowlist; empty/unset disables signup, fail-closed). Health endpoint: `GET /healthz`.
 
 ## Package & deploy
 
-Dockerfile and Kubernetes manifests live under [`deploy/`](deploy/) — see
-[`deploy/README.md`](deploy/README.md) for the image build command, manifest
-application, the TLS requirement, and the single-replica rationale.
+Dockerfile and Kubernetes manifests are in [`deploy/`](deploy/). See [`deploy/README.md`](deploy/README.md) for image build commands, manifest deployment, TLS requirements, and the single-replica rationale.

@@ -1,52 +1,41 @@
-# NoReplay — extensão Firefox
+# NoReplay — Firefox Extension
 
-Pula automaticamente vídeos do YouTube que já foram assistidos, dando 5 segundos
-para assistir de novo antes de seguir para o próximo vídeo sugerido.
+Automatically skips YouTube videos that have already been watched, giving you 5 seconds to rewatch before moving to the next suggested video.
 
-## Arquitetura
+## Architecture
 
-- O **background** (event page MV3, `background.scripts` com `type: "module"`) é o
-  dono único de `storage.local`: catálogo e token de sessão. Content scripts e a
-  página de opções só alcançam esse estado por mensagens.
-- Os **content scripts** são scripts clássicos (Firefox não suporta content scripts
-  como módulos ES) e cuidam apenas do DOM e dos sinais da página.
-- A lógica pura e testável vive em `lib/` e `storage/`, importada pelo background e
-  pelos testes (`node --test`).
+- The **background** (MV3 event page, `background.scripts` with `type: "module"`) is the sole owner of `storage.local`: the catalog and session token. Content scripts and the options page only access this state through messages.
+- **Content scripts** are classic scripts (Firefox does not support ES module content scripts) and only handle DOM interactions and page signals.
+- Pure, testable logic lives in `lib/` and `storage/`, imported by the background and tests (`node --test`).
 
-## Desenvolvimento
+## Development
 
 ```bash
 npm install          # eslint + web-ext (devDependencies)
-npm test             # testes unitários (node --test)
+npm test             # unit tests (node --test)
 npm run lint         # eslint
-npm run lint:manifest  # web-ext lint (valida o manifest MV3)
+npm run lint:manifest  # web-ext lint (validates MV3 manifest)
 ```
 
-Smoke manual em Firefox real:
+Manual smoke test in real Firefox:
 
 ```bash
 npx web-ext run --source-dir .
 ```
 
-Carregue o YouTube, navegue para um vídeo, assista além do limiar, reabra o vídeo e
-verifique o popup. O checklist completo do smoke (AE1–AE8) está na seção
-"Smoke manual" abaixo.
+Load YouTube, navigate to a video, watch past the threshold, reopen the video, and verify the popup appears. The full smoke checklist (AE1–AE8) is in the "Manual smoke test" section below.
 
-## Instalação permanente
+## Permanent installation
 
-A instalação permanente exige assinatura na AMO ou o modo de desenvolvedor do
-Firefox (`about:debugging` → "Carregar add-on temporário"). Não há dependência de
-infraestrutura.
+Permanent installation requires signing through AMO or using Firefox Developer mode (`about:debugging` → "Load Temporary Add-on"). No infrastructure dependency is required.
 
-## Smoke manual (AE1–AE8)
+## Manual smoke test (AE1–AE8)
 
-Pendente de execução em Firefox com o YouTube real. Este é o único teste do
-comportamento contra o YouTube ao vivo; automação contra o site real está fora do
-escopo.
+Pending execution in Firefox with real YouTube. This is the only test of behavior against live YouTube; automation against the real site is out of scope.
 
-- [ ] AE1 — vídeo assistido sem exceção: sem interação por 5s, o próximo vídeo sugerido toca.
-- [ ] AE2 — clicar no popup cancela o skip e o vídeo toca.
-- [ ] AE3 — marcar "nunca pular" grava a exceção; reabrir não mostra popup.
-- [ ] AE4 — vídeo abandonado abaixo do limiar não é catalogado.
-- [ ] AE6 — sem login, detecção e skip funcionam.
-- [ ] AE5 / AE7 / AE8 — exigem dois dispositivos (ou dois perfis) e backend; ver `server/deploy/README.md`.
+- [ ] AE1 — Watched video without exception: with no interaction for 5s, the next suggested video plays.
+- [ ] AE2 — Clicking the popup cancels the skip and the video plays.
+- [ ] AE3 — Checking "never skip" records the exception; reopening does not show the popup.
+- [ ] AE4 — Video abandoned below the threshold is not cataloged.
+- [ ] AE6 — Without login, detection and skipping work.
+- [ ] AE5 / AE7 / AE8 — Require two devices (or two profiles) and the backend; see `server/deploy/README.md`.

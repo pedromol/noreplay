@@ -1,69 +1,55 @@
 # NoReplay
 
-Extensão Firefox MV3 + serviço Go que pula vídeos já assistidos no YouTube,
-com catálogo local, sincronização monotônica (KTD6) e suporte a Shorts.
+Firefox MV3 extension + Go service that skips already-watched YouTube videos, with a local catalog, monotonic synchronization (KTD6), and Shorts support.
 
-## Estrutura
+## Structure
 
 ```
 .
-├── AGENTS.md          # diretrizes de desenvolvimento e invariantes
+├── AGENTS.md          # Development guidelines and invariants
 ├── extension/         # Firefox extension (MV3, ES modules, background scripts)
-│   ├── content/       # content scripts (skip, progress, history, hide-watched, navigator)
-│   ├── lib/           # módulos compartilhados (video.js, background.js, navigation.js, hide-watched-core.js, ...)
-│   ├── sync/          # cliente/engine de sincronização com o servidor
-│   ├── storage/       # catálogo local (browser.storage.local)
-│   ├── options/       # página de opções
+│   ├── content/       # Content scripts (skip, progress, history, hide-watched, navigator)
+│   ├── lib/           # Shared modules (video.js, background.js, navigation.js, hide-watched-core.js, ...)
+│   ├── sync/          # Client/sync engine with server
+│   ├── storage/       # Local catalog (browser.storage.local)
+│   ├── options/       # Options page
 │   ├── tests/         # node:test (lint + lint:manifest + build via web-ext)
-│   └── manifest.json  # MV3, permisos de tabs/storage; não service worker
-├── server/            # Go HTTP (net/http, modernc.org/sqlite, sem CGO, WAL)
-│   ├── cmd/server/    # ponto de entrada
+│   └── manifest.json  # MV3, tab/storage permissions; no service worker
+├── server/            # Go HTTP (net/http, modernc.org/sqlite, CGO-free, WAL)
+│   ├── cmd/server/    # Entry point
 │   ├── internal/      # httpapi, store, auth (argon2id, SHA-256 tokens 30d)
 │   ├── deploy/        # Dockerfile + Kubernetes (deployment.yaml, k8s/)
-│   └── README.md      # execução local (make run / check / build)
+│   └── README.md      # Local execution (make run / check / build)
 └── docs/
-    └── plans/         # documentos de planejamento preservados
+    └── plans/         # Preserved project plans
 ```
 
-## Objetivo
+## Goals
 
-- **Offline-first**: extensão opera sem conta via `browser.storage.local`; detecção,
-  countdown de 5s, acumulação de playtime e exceções "nunca pular" funcionam sem rede.
-- **Threshold de watch**: marcado assistido quando playtime ativo atinge o menor de
-  30s ou 25% da duração; busca não conta; playtime acumula entre sessões.
-- **Contagem graciosa**: overlay aparece em vídeos assistidos sem exceção; clique
-  cancela; checkbox "nunca pular" marca exceção e permite reprodução.
-- **Sincronização monotônica (KTD6)**: merge por OR em `watched`/`neverSkip`,
-  `max(stored, incoming)` em timestamps, clamped ao relógio do servidor; coalescência
-  dentro de ciclo ativo; logout isola (não apaga catálogo local).
-- **Shorthand** (Shorts): `extractVideoId` resolve `/shorts/<id>`; containers
-  `ytd-shorts-lockup-viewer`/`ytd-reel-item-renderer` ocultados; histórico e progresso
-  tratam dedup entre `/watch?v=` e `/shorts/`.
-- **Segurança**: tokens apenas em `Authorization: Bearer` via TLS; signup restrito a
-  `SIGNUP_EMAIL` (fail-closed); rate-limit 5/min em `/v1/signup` e `/v1/login`.
+- **Offline-first**: The extension operates without an account via `browser.storage.local`. Detection, 5-second countdown, playtime accumulation, and "never skip" exceptions all work offline.
+- **Watch threshold**: A video is marked as watched when active playtime reaches the smaller of 30 seconds or 25% of its duration. Seeking/skipping does not count toward playtime; playtime accumulates across sessions.
+- **Graceful counting**: The overlay appears on watched videos without exceptions. Clicking anywhere cancels the skip and lets the video play. Checking "never skip" marks an exception and allows the video to play.
+- **Monotonic synchronization (KTD6)**: Merge uses boolean OR for `watched`/`neverSkip`, keeps `max(stored, incoming)` for timestamps (clamped to the server clock), resets timestamps to 0 if flags are false. Coalesces consecutive sync calls within an active sync cycle. Logout isolates the session (does not erase the local catalog).
+- **Shorts support**: `extractVideoId` resolves `/shorts/<id>`. Containers `ytd-shorts-lockup-viewer`/`ytd-reel-item-renderer` are hidden. History and progress handle deduplication between `/watch?v=` and `/shorts/`.
+- **Security**: Tokens are passed only in the `Authorization: Bearer` header over TLS. Signup is restricted to `SIGNUP_EMAIL` (fail-closed). Rate limiting of 5 requests/minute on `/v1/signup` and `/v1/login`.
 
-## Afinidades e referências
+## Related docs and references
 
-- `AGENTS.md`: invariantes arquiteturais (trust boundary, monotonic merge, passkeys,
-  rate limit, SQLite WAL/foreign_keys, falha-fechada). Não editar sem relê-lo.
-- `extension/README.md`: build (`npm test`, `npm run lint`, `npm run lint:manifest`,
-  `npm run build` via web-ext) e manifest.
-- `server/README.md` / `Makefile`: execução local (`make run`/`check`/`build`; binário
-  estático `bin/noreplay`); ambiente `ADDR`, `DATABASE_PATH`, `SIGNUP_EMAIL`.
-- `docs/plans/`: planos de projeto preservados conforme regra de documentação.
-- `extension/manifest.json`: MV3 (`background.scripts`, não service workers); permissões
-  de tab/URL necessárias para `browser.tabs.get` (resolução canônica do videoId).
+- `AGENTS.md`: Architectural invariants (trust boundary, monotonic merge, passkeys, rate limiting, SQLite WAL/foreign_keys, fail-closed). Do not edit without re-reading it.
+- `extension/README.md`: Build instructions (`npm test`, `npm run lint`, `npm run lint:manifest`, `npm run build` via web-ext) and manifest details.
+- `server/README.md` / `Makefile`: Local execution (`make run`/`check`/`build`; static binary `bin/noreplay`); environment variables `ADDR`, `DATABASE_PATH`, `SIGNUP_EMAIL`.
+- `docs/plans/`: Preserved project plans as per documentation rules.
+- `extension/manifest.json`: MV3 (`background.scripts`, no service workers). Requires tab/URL permissions for `browser.tabs.get` (canonical video ID resolution).
 
-## Verificação rápida
+## Quick verification
 
 ```sh
-# extensao
+# Extension
 cd extension && npm test && npm run lint && npm run lint:manifest
 
-# servidor
+# Server
 cd server && go test ./... && go vet ./... && make check
 ```
 
 ---
-*Criado em 2026-10-22. Baseado em AGENTS.md e código existente; não substitui planos
-em `docs/plans/` nem testes existentes.*
+*Created 2026-10-22. Based on AGENTS.md and existing code; does not replace plans in `docs/plans/` or existing tests.*
