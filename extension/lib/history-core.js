@@ -1,4 +1,10 @@
 import { parseUrl, isYouTubeHost, extractVideoId } from "./video.js";
+import "./history-path-core.js";
+
+const historyPath = globalThis.NoReplayHistoryPath;
+if (!historyPath || typeof historyPath.isHistoryPath !== "function") {
+  throw new Error("NoReplay history-path core is required");
+}
 
 export const CANONICAL_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
@@ -6,7 +12,7 @@ export function isHistoryUrl(rawUrl) {
   const url = parseUrl(rawUrl);
   if (!url) return false;
   if (!isYouTubeHost(url.hostname)) return false;
-  return url.pathname === "/feed/history" || url.pathname.startsWith("/feed/history/");
+  return historyPath.isHistoryPath(url.pathname);
 }
 
 export function isValidVideoId(id) {

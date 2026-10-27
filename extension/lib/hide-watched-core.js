@@ -15,6 +15,16 @@
   const SHELF_SELECTORS = ["ytd-rich-shelf-renderer", "ytd-reel-shelf-renderer"];
 
   const VIDEO_LINK_SELECTOR = 'a[href*="/watch"], a[href*="/shorts/"]';
+  const PROGRESS_SELECTORS = [
+    "ytd-thumbnail-overlay-resume-playback-renderer #progress",
+    "ytm-thumbnail-overlay-resume-playback-renderer #progress",
+    "yt-thumbnail-overlay-progress-bar-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+    "yt-lockup-view-model .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+    ".ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment",
+  ];
+  const PROGRESS_SELECTOR = PROGRESS_SELECTORS.join(", ");
+  const RESUME_PROGRESS_HIDE_PERCENT = 25;
+  const PERCENT_WIDTH_REGEX = /^[\d.]+%$/;
 
   function extractVideoIdFromHref(href) {
     if (!href || typeof href !== "string") return null;
@@ -45,11 +55,45 @@
     return extractVideoIdFromHref(rawHref);
   }
 
-  function shouldHideVideo(record, isFeatureEnabled) {
-    if (!isFeatureEnabled) return false;
-    if (!record || typeof record !== "object") return false;
+  function extractProgressPercentFromElement(container) {
+    if (!container || typeof container.querySelector !== "function") return null;
+    const bar = container.querySelector(PROGRESS_SELECTOR);
+    if (!bar || !bar.style || typeof bar.style.width !== "string") return null;
+
+    const width = bar.style.width.trim();
+    if (!PERCENT_WIDTH_REGEX.test(width)) return null;
+
+    const value = Number.parseFloat(width);
+    if (!Number.isFinite(value)) return null;
+    return Math.min(100, Math.max(0, value));
+  }
+
+  function shouldHideByProgress(progressPercent) {
+    if (typeof progressPercent !== "number" || !Number.isFinite(progressPercent)) return false;
+    return progressPercent >= RESUME_PROGRESS_HIDE_PERCENT;
+  }
+
+  function recordDecision(record) {
+    if (!record || typeof record !== "object") return null;
     if (record.neverSkip) return false;
-    return Boolean(record.watched);
+    if (record.watched) return true;
+    return null;
+  }
+
+  function shouldHideVideo(record, isFeatureEnabled, progressPercent) {
+    if (!isFeatureEnabled) return false;
+    const decision = recordDecision(record);
+    if (decision !== null) return decision;
+    return shouldHideByProgress(progressPercent);
+  }
+
+  function shouldHideItem(container, record, isFeatureEnabled) {
+    if (!isFeatureEnabled) return false;
+    const decided = recordDecision(record) !== null;
+    const progressPercent = decided
+      ? null
+      : extractProgressPercentFromElement(container);
+    return shouldHideVideo(record, isFeatureEnabled, progressPercent);
   }
 
   function shouldHideShelf(shelf, isFeatureEnabled, catalog) {
@@ -61,8 +105,9 @@
       const videoId = extractVideoIdFromElement(item);
       if (!videoId) continue;
       seen += 1;
-      const record = catalog && typeof catalog[videoId] === "object" ? catalog[videoId] : null;
-      if (!shouldHideVideo(record, true)) return false;
+      const record =
+        catalog && typeof catalog[videoId] === "object" ? catalog[videoId] : null;
+      if (!shouldHideItem(item, record, true)) return false;
     }
     return seen > 0;
   }
@@ -71,9 +116,15 @@
     CONTAINER_SELECTORS,
     SHELF_SELECTORS,
     VIDEO_LINK_SELECTOR,
+    PROGRESS_SELECTORS,
+    PROGRESS_SELECTOR,
+    RESUME_PROGRESS_HIDE_PERCENT,
     extractVideoIdFromHref,
     extractVideoIdFromElement,
+    extractProgressPercentFromElement,
+    shouldHideByProgress,
     shouldHideVideo,
+    shouldHideItem,
     shouldHideShelf,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
