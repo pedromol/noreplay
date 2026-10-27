@@ -1,5 +1,3 @@
-import { describeAccountResult, describeSessionStatus, ACCOUNT_STATUS } from "../sync/status.js";
-
 const browser = globalThis.browser || globalThis.chrome;
 
 function byId(id) {
@@ -26,7 +24,6 @@ function t(key) {
 }
 
 function localize() {
-  // Handle data-i18n attributes
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     if (!key) return;
@@ -54,7 +51,6 @@ function localize() {
     const msg = t(key);
     if (msg) el.setAttribute("placeholder", msg);
   });
-  // Handle __MSG_...__ placeholders in text content
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
   const nodes = [];
   let node;
@@ -72,7 +68,6 @@ function localize() {
       textNode.nodeValue = replaced;
     }
   }
-  // Handle attributes
   document.querySelectorAll("*").forEach((el) => {
     for (const attr of Array.from(el.attributes)) {
       if (attr.value && attr.value.includes("__MSG_")) {
@@ -90,11 +85,6 @@ function localize() {
   if (title) document.title = title;
 }
 
-function setVisible(id, visible) {
-  const el = byId(id);
-  if (el) el.classList.toggle("hidden", !visible);
-}
-
 export async function send(message) {
   try {
     return await browser.runtime.sendMessage(message);
@@ -102,8 +92,6 @@ export async function send(message) {
     return { error: true };
   }
 }
-
-let submitting = false;
 
 export async function refreshCatalogStats() {
   const stats = await send({ type: "catalog-stats" });
@@ -185,191 +173,93 @@ export async function handleCatalogClear() {
   }
 }
 
-export async function loadServerUrl() {
-  const res = await send({ type: "get-sync-config" });
-  if (res && res.baseUrl) {
-    const input = byId("server-url");
-    if (input) input.value = res.baseUrl;
-  }
-}
+const HIDE_WATCHED_KEY = "settings.hideWatched";
+export { HIDE_WATCHED_KEY };
 
-export async function onSaveServerUrl(e) {
-  e.preventDefault();
-  const input = byId("server-url");
-  const url = input ? input.value.trim() : "";
-  setText("server-url-feedback", t("sync_server_url_saving") || "Saving URL...");
-  const res = await send({ type: "set-server-url", baseUrl: url });
-  if (res && res.ok) {
-    setText("server-url-feedback", t("sync_server_url_saved") || "Server URL saved.");
-    if (input) input.value = res.baseUrl;
-    await refreshStatus();
-    setTimeout(() => setText("server-url-feedback", ""), 2500);
-  } else {
-    setText("server-url-feedback", t("sync_server_url_error") || "Error saving URL.");
-  }
-}
-
-export async function refreshStatus() {
-  const res = await send({ type: "account-status" });
-  if (!res || res.error) {
-    setText("session-status", `${describeSessionStatus(ACCOUNT_STATUS.NETWORK_ERROR)} (${t("session_network_error") || "Network error (Local Offline mode active)"})`);
-    setVisible("logout-form", false);
-    setVisible("login-form", true);
-    setVisible("signup-form", true);
-    return;
-  }
-  if (res.sessionActive) {
-    setText("session-status", `${describeSessionStatus(ACCOUNT_STATUS.SESSION_ACTIVE)} — ${t("session_active_syncing") || "Syncing with cloud"}`);
-    setVisible("logout-form", true);
-    setVisible("login-form", false);
-    setVisible("signup-form", false);
-  } else {
-    const status = res.expired ? ACCOUNT_STATUS.SESSION_EXPIRED : ACCOUNT_STATUS.NO_SESSION;
-    const baseText = describeSessionStatus(status);
-    const suffix = res.expired ? "" : ` — ${t("session_no_session_offline") || "Not signed in — Local mode (Offline) active"}`;
-    setText("session-status", `${baseText}${suffix}`);
-    setVisible("logout-form", false);
-    setVisible("login-form", true);
-    setVisible("signup-form", true);
-  }
-}
-
-async function runPhase(phase, message, formId, feedbackId) {
-  if (submitting) return;
-  submitting = true;
-  setText(feedbackId, t("submitting") || "Submitting...");
-  const res = await send(message);
-  submitting = false;
-  const described = describeAccountResult(res, { phase });
-  setText(feedbackId, described.message);
-  if (described.status === ACCOUNT_STATUS.SUCCESS) {
-    const form = byId(formId);
-    if (form) form.reset();
-    await refreshStatus();
-  }
-}
-
-function onSignup(e) {
-  e.preventDefault();
-  runPhase(
-    "signup",
-    {
-      type: "account-signup",
-      email: byId("signup-email").value.trim(),
-      password: byId("signup-password").value,
-    },
-    "signup-form",
-    "signup-feedback"
-  );
-}
-
-function onLogin(e) {
-  e.preventDefault();
-  runPhase(
-    "login",
-    {
-      type: "account-login",
-      email: byId("login-email").value.trim(),
-      password: byId("login-password").value,
-    },
-    "login-form",
-    "login-feedback"
-  );
-}
-
-function onLogout(e) {
-  e.preventDefault();
-  runPhase("logout", { type: "account-logout" }, "logout-form", "logout-feedback");
-}
-
-async function onHistoryImport(e) {
-  e.preventDefault();
-  if (submitting) return;
-  submitting = true;
-  const btn = byId("history-import-btn");
-  if (btn) btn.disabled = true;
-  const targetSelect = byId("history-target");
-  const target = targetSelect ? targetSelect.value : "100";
-  setText("history-import-feedback", t("history_import_opening") || "Opening history page...");
-  const res = await send({ type: "start-history-import", targetCount: target });
-  submitting = false;
-  if (btn) btn.disabled = false;
-  if (res && res.ok) {
-    setText("history-import-feedback", t("history_import_opened") || "History opened in new tab. Track progress on YouTube.");
-  } else {
-    setText("history-import-feedback", t("history_import_error") || "Error starting history import.");
-  }
-}
-
-export const HIDE_WATCHED_KEY = "settings.hideWatched";
-
-export async function loadHideWatchedSetting(storage) {
+export async function loadHideWatchedSetting(storageArea) {
   try {
-    const stored = await storage.get(HIDE_WATCHED_KEY);
-    if (!stored || stored[HIDE_WATCHED_KEY] === undefined) return true;
-    return Boolean(stored[HIDE_WATCHED_KEY]);
+    const stored = await storageArea.get(HIDE_WATCHED_KEY);
+    const val = stored ? stored[HIDE_WATCHED_KEY] : undefined;
+    if (val === undefined || val === null) {
+      return true;
+    }
+    return Boolean(val);
   } catch {
     return true;
   }
 }
 
-export async function saveHideWatchedSetting(storage, value) {
-  await storage.set({ [HIDE_WATCHED_KEY]: Boolean(value) });
+export async function saveHideWatchedSetting(storageArea, enabled) {
+  try {
+    if (enabled) {
+      await storageArea.set({ [HIDE_WATCHED_KEY]: true });
+    } else {
+      await storageArea.set({ [HIDE_WATCHED_KEY]: false });
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
-function init() {
+async function setupHideWatched() {
+  const toggle = byId("hide-watched-toggle");
+  if (!toggle) return;
+  if (browser && browser.storage && browser.storage.local) {
+    try {
+      const enabled = await loadHideWatchedSetting(browser.storage.local);
+      toggle.checked = enabled;
+    } catch {}
+  }
+  toggle.addEventListener("change", async (e) => {
+    if (!(browser && browser.storage && browser.storage.local)) return;
+    try {
+      await saveHideWatchedSetting(browser.storage.local, e.target.checked);
+      setText("hide-watched-feedback", t("hide_watched_saved") || "Saved.");
+      setTimeout(() => setText("hide-watched-feedback", ""), 1500);
+    } catch {
+      setText("hide-watched-feedback", t("hide_watched_error") || "Error saving.");
+    }
+  });
+}
+
+async function startHistoryImport() {
+  const feedback = byId("history-import-feedback");
+  if (feedback) setText("history-import-feedback", t("history_import_starting") || "Opening history...");
+  const res = await send({ type: "start-history-import" });
+  if (res && res.ok) {
+    if (feedback) setText("history-import-feedback", t("history_import_opened") || "Opened YouTube History tab. Import will run automatically.");
+    setTimeout(() => {
+      if (feedback) setText("history-import-feedback", "");
+    }, 3000);
+  } else {
+    if (feedback) setText("history-import-feedback", t("history_import_error") || "Error starting import.");
+  }
+}
+
+async function init() {
   localize();
-  const signupForm = byId("signup-form");
-  if (signupForm) signupForm.addEventListener("submit", onSignup);
-  const loginForm = byId("login-form");
-  if (loginForm) loginForm.addEventListener("submit", onLogin);
-  const logoutForm = byId("logout-form");
-  if (logoutForm) logoutForm.addEventListener("submit", onLogout);
-  const historyForm = byId("history-import-form");
-  if (historyForm) historyForm.addEventListener("submit", onHistoryImport);
+  await refreshCatalogStats();
+  await setupHideWatched();
 
-  const serverConfigForm = byId("server-config-form");
-  if (serverConfigForm) serverConfigForm.addEventListener("submit", onSaveServerUrl);
-
-  const exportBtn = byId("catalog-export-btn");
+  const exportBtn = byId("export-catalog");
   if (exportBtn) exportBtn.addEventListener("click", exportCatalogBackup);
 
-  const importTriggerBtn = byId("catalog-import-trigger-btn");
-  const importInput = byId("catalog-import-input");
-  if (importTriggerBtn && importInput) {
-    importTriggerBtn.addEventListener("click", () => importInput.click());
-    importInput.addEventListener("change", (e) => {
+  const importInput = byId("import-catalog-file");
+  if (importInput) {
+    importInput.addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
       if (file) {
-        handleCatalogImportFile(file);
-        importInput.value = "";
+        await handleCatalogImportFile(file);
       }
+      importInput.value = "";
     });
   }
 
-  const clearBtn = byId("catalog-clear-btn");
+  const clearBtn = byId("clear-catalog");
   if (clearBtn) clearBtn.addEventListener("click", handleCatalogClear);
 
-  const hideWatchedInput = byId("setting-hide-watched");
-  if (hideWatchedInput && browser && browser.storage && browser.storage.local) {
-    let preferencesFeedbackTimer = null;
-    loadHideWatchedSetting(browser.storage.local).then((enabled) => {
-      hideWatchedInput.checked = enabled;
-    });
-    hideWatchedInput.addEventListener("change", async (e) => {
-      await saveHideWatchedSetting(browser.storage.local, e.target.checked);
-      setText("preferences-feedback", t("preferences_saved") || "Preference saved.");
-      if (preferencesFeedbackTimer !== null) clearTimeout(preferencesFeedbackTimer);
-      preferencesFeedbackTimer = setTimeout(() => {
-        setText("preferences-feedback", "");
-        preferencesFeedbackTimer = null;
-      }, 2000);
-    });
-  }
-
-  refreshCatalogStats();
-  loadServerUrl();
-  refreshStatus();
+  const historyBtn = byId("start-history-import");
+  if (historyBtn) historyBtn.addEventListener("click", startHistoryImport);
 }
 
 if (typeof document !== "undefined") {

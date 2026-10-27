@@ -4,12 +4,10 @@
   const CONTAINER_SELECTORS = [
     "ytd-rich-item-renderer",
     "ytd-video-renderer",
-    "ytd-compact-video-renderer",
     "ytd-grid-video-renderer",
     "ytd-reel-item-renderer",
     "ytd-shorts-lockup-view-model",
     "ytm-video-with-context-renderer",
-    "ytm-compact-video-renderer",
   ];
 
   const SHELF_SELECTORS = ["ytd-rich-shelf-renderer", "ytd-reel-shelf-renderer"];

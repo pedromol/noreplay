@@ -36,7 +36,7 @@ export default [
     files: ["options/**/*.js"],
     languageOptions: {
       sourceType: "module",
-      globals: { ...browserGlobals, document: "readonly", window: "readonly", Blob: "readonly" },
+      globals: { ...browserGlobals, document: "readonly", window: "readonly", Blob: "readonly", NodeFilter: "readonly" },
     },
   },
 ];

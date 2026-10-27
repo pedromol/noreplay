@@ -131,6 +131,7 @@
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
+        align-items: center;
       }
       .status {
         margin-top: 8px;
@@ -141,8 +142,32 @@
       .hidden {
         display: none !important;
       }
+      .file-input {
+        display: none;
+      }
+      .file-label,
+      label.file-label.button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #3c4043;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s;
+        margin-bottom: 0;
+      }
+      .file-label:hover,
+      label.file-label.button:hover {
+        background: #f1f3f4;
+        border-color: #c6c9cc;
+      }
       details {
-        margin-top: 16px;
+        margin-bottom: 16px;
         border: 1px solid #dadce0;
         border-radius: 8px;
         padding: 14px 18px;
@@ -154,38 +179,22 @@
         font-size: 1.05em;
         color: #202124;
       }
-      summary:focus {
-        outline: none;
-      }
-      .sync-section {
-        margin-top: 14px;
-        padding-top: 12px;
-        border-top: 1px solid #eee;
-      }
-      .sync-section form {
-        margin-top: 12px;
-        padding: 12px;
-        border: 1px solid #eee;
-        border-radius: 6px;
-      }
-      .sync-section h3 {
-        margin-top: 0;
-        font-size: 1em;
-      }
     </style>
   </head>
   <body>
     <header>
-      <h1><span data-i18n="extension_name"></span> <span class="badge-offline" data-i18n="badge_offline"></span></h1>
-      <p class="description" data-i18n="offline_description"></p>
+      <h1>
+        <span data-i18n="options_title"></span>
+      </h1>
+      <p class="description" data-i18n="options_description"></p>
     </header>
 
-    <div class="card" id="catalog-card">
-      <h2 data-i18n="catalog_local_title"></h2>
-      <p class="description" data-i18n="catalog_local_description"></p>
+    <section class="card">
+      <h2 data-i18n="catalog_title"></h2>
+      <p class="description" data-i18n="catalog_description"></p>
       <div class="stats-grid">
         <div class="stat-item">
-          <div id="stat-watched" class="stat-value">0</div>
+          <div class="stat-value" id="stat-watched">-</div>
           <div class="stat-label" data-i18n="stat_watched"></div>
         </div>
         <div class="stat-item">
@@ -194,91 +203,40 @@
         </div>
       </div>
       <div class="btn-group">
-        <button id="catalog-export-btn" type="button" data-i18n="catalog_export_btn"></button>
-        <button id="catalog-import-trigger-btn" type="button" data-i18n="catalog_import_btn"></button>
-        <input id="catalog-import-input" type="file" accept=".json,application/json" class="hidden" />
-        <button id="catalog-clear-btn" type="button" class="danger" data-i18n="catalog_clear_btn"></button>
+        <button id="export-catalog" data-i18n="catalog_export_btn"></button>
+        <label for="import-catalog-file" class="file-label button" role="button" tabindex="0" data-i18n="catalog_import_btn"></label>
+        <input id="import-catalog-file" class="file-input" type="file" accept="application/json" />
+        <button id="clear-catalog" class="danger" data-i18n="catalog_clear_btn"></button>
       </div>
       <div id="catalog-feedback" class="status"></div>
-    </div>
+    </section>
 
-    <form id="preferences-form" class="card">
-      <h2 data-i18n="preferences_title"></h2>
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
-        <input id="setting-hide-watched" type="checkbox" style="width: auto; margin-bottom: 0;" />
-        <span data-i18n="preferences_hide_watched"></span>
-      </label>
-      <div id="preferences-feedback" class="status"></div>
-    </form>
+    <section class="card">
+      <h2 data-i18n="sync_title"></h2>
+      <p class="description" data-i18n="sync_description"></p>
+    </section>
 
-    <form id="history-import-form" class="card">
+    <section class="card">
       <h2 data-i18n="history_import_title"></h2>
       <p class="description" data-i18n="history_import_description"></p>
-      <label for="history-target" data-i18n="history_import_quantity"></label>
-      <select id="history-target">
-        <option value="50" data-i18n="history_import_last_50"></option>
-        <option value="100" selected data-i18n="history_import_last_100"></option>
-        <option value="200" data-i18n="history_import_last_200"></option>
-        <option value="0" data-i18n="history_import_all_until_stop"></option>
-      </select>
-      <button id="history-import-btn" type="submit" class="primary" data-i18n="history_import_btn"></button>
+      <div class="btn-group">
+        <button id="start-history-import" data-i18n="history_import_start_btn"></button>
+      </div>
       <div id="history-import-feedback" class="status"></div>
-    </form>
+    </section>
 
-    <details id="cloud-sync-details">
-      <summary data-i18n="cloud_sync_title"></summary>
-      <div class="sync-section">
-        <p class="description" data-i18n="cloud_sync_description"></p>
-
-        <form id="server-config-form">
-          <h3 data-i18n="sync_server_title"></h3>
-          <label for="server-url" data-i18n="sync_server_url_label"></label>
-          <div style="display: flex; gap: 8px;">
-            <input id="server-url" type="text" placeholder="https://noreplay.local" />
-            <button id="server-url-btn" type="submit" style="white-space: nowrap;" data-i18n="sync_server_url_save"></button>
-          </div>
-          <div id="server-url-feedback" class="status"></div>
-        </form>
-
-        <div id="session-status" class="status" style="font-weight: 500; margin: 12px 0;" data-i18n="session_checking"></div>
-
-        <form id="signup-form" novalidate>
-          <h3 data-i18n="signup_title"></h3>
-          <label>
-            <span data-i18n="signup_email_label"></span>
-            <input id="signup-email" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span data-i18n="signup_password_label"></span>
-            <input id="signup-password" type="password" autocomplete="new-password" minlength="12" required />
-          </label>
-          <button type="submit" data-i18n="signup_btn"></button>
-          <div id="signup-feedback" class="status"></div>
-        </form>
-
-        <form id="login-form" novalidate>
-          <h3 data-i18n="login_title"></h3>
-          <label>
-            <span data-i18n="login_email_label"></span>
-            <input id="login-email" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span data-i18n="login_password_label"></span>
-            <input id="login-password" type="password" autocomplete="current-password" required />
-          </label>
-          <button type="submit" data-i18n="login_btn"></button>
-          <div id="login-feedback" class="status"></div>
-        </form>
-
-        <form id="logout-form" class="hidden">
-          <h3 data-i18n="active_session_title"></h3>
-          <button type="submit" data-i18n="logout_btn"></button>
-          <div id="logout-feedback" class="status"></div>
-        </form>
+    <details>
+      <summary data-i18n="hide_watched_title"></summary>
+      <div style="margin-top: 12px;">
+        <p class="description" data-i18n="hide_watched_description"></p>
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+          <input type="checkbox" id="hide-watched-toggle" style="width: auto; margin: 0;" />
+          <span data-i18n="hide_watched_toggle_label"></span>
+        </label>
+        <div id="hide-watched-feedback" class="status"></div>
       </div>
     </details>
 
-    <script src="i18n-polyfill.js"></script>
     <script type="module" src="options.js"></script>
   </body>
 </html>

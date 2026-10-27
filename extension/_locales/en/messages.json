@@ -20,7 +20,7 @@
     "description": "Badge text shown in options page"
   },
   "offline_description": {
-    "message": "NoReplay works 100% in your browser without needing a server. Your watched videos and preferences are saved locally.",
+    "message": "NoReplay works 100% in your browser. Your watched videos are saved locally and can sync via Firefox Sync.",
     "description": "Description of offline mode"
   },
   "catalog_local_title": {
@@ -282,5 +282,29 @@
   "history_import_tab_note": {
     "message": "History opened in new tab. Track progress on YouTube.",
     "description": "Note about history import in new tab"
+  },
+  "sync_description": {
+    "message": "Sync your watched catalog across devices using Firefox Sync when signed into Mozilla account.",
+    "description": "Description for sync section"
+  },
+  "hide_watched_toggle_label": {
+    "message": "Hide watched videos",
+    "description": "Label for hide watched toggle"
+  },
+  "hide_watched_title": {
+    "message": "Search results",
+    "description": "Title for hide watched section"
+  },
+  "hide_watched_description": {
+    "message": "Hide videos you've already watched from YouTube search results.",
+    "description": "Description for hide watched"
+  },
+  "hide_watched_saved": {
+    "message": "Saved.",
+    "description": "Message when setting saved"
+  },
+  "hide_watched_error": {
+    "message": "Error saving.",
+    "description": "Error message"
   }
 }

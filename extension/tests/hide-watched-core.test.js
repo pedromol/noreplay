@@ -20,12 +20,12 @@ test("CONTAINER_SELECTORS includes YouTube desktop and mobile card containers", 
   assert.ok(Array.isArray(CONTAINER_SELECTORS));
   assert.ok(CONTAINER_SELECTORS.includes("ytd-rich-item-renderer"));
   assert.ok(CONTAINER_SELECTORS.includes("ytd-video-renderer"));
-  assert.ok(CONTAINER_SELECTORS.includes("ytd-compact-video-renderer"));
   assert.ok(CONTAINER_SELECTORS.includes("ytd-grid-video-renderer"));
   assert.ok(CONTAINER_SELECTORS.includes("ytd-reel-item-renderer"));
   assert.ok(CONTAINER_SELECTORS.includes("ytd-shorts-lockup-view-model"));
   assert.ok(CONTAINER_SELECTORS.includes("ytm-video-with-context-renderer"));
-  assert.ok(CONTAINER_SELECTORS.includes("ytm-compact-video-renderer"));
+  assert.ok(!CONTAINER_SELECTORS.includes("ytd-compact-video-renderer"));
+  assert.ok(!CONTAINER_SELECTORS.includes("ytm-compact-video-renderer"));
 });
 
 test("PROGRESS_SELECTORS covers legacy desktop, mobile, and 2026 progress bars", () => {
