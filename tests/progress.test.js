@@ -221,3 +221,23 @@ test("a playback message on a non-watch tab is ignored", async () => {
   assert.deepEqual(await background.catalog.list(), []);
   assert.equal(browser.storage.local.snapshot()[PLAYTIME_KEY], undefined);
 });
+
+test("reaching the watched threshold during active playback does not send a skip state to the playing tab", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  browser.setTab(7, { url: "https://www.youtube.com/watch?v=abc123" });
+
+  const background = createBackground({ browser, now: () => 1000 });
+  await background.onRuntimeMessage(
+    { type: "playback", deltaSeconds: 30, duration: 200 },
+    { tab: { id: 7 } }
+  );
+
+  const record = await background.catalog.get("abc123");
+  assert.equal(record.watched, true);
+
+  const skipMessages = browser.sentMessages.filter(
+    (entry) => entry.tabId === 7 && entry.message.type === "video-state"
+  );
+  assert.deepEqual(skipMessages, []);
+});
