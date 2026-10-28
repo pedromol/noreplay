@@ -28,7 +28,7 @@
     "description": "Title for catalog section"
   },
   "catalog_local_description": {
-    "message": "Armazenado com segurança no armazenamento local do navegador ($CODE$storage.local$CODE$).",
+    "message": "Armazenado com segurança no armazenamento local do navegador (storage.local).",
     "description": "Description for catalog section"
   },
   "stat_watched": {
@@ -65,11 +65,23 @@
   },
   "catalog_export_success": {
     "message": "Backup exportado com sucesso ($COUNT$ registros).",
-    "description": "Success message when export succeeds"
+    "description": "Success message when export succeeds",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
   },
   "catalog_export_file_error": {
     "message": "Erro ao gerar arquivo de backup: $ERROR$",
-    "description": "Error message when generating backup file fails"
+    "description": "Error message when generating backup file fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Erro de permissão"
+      }
+    }
   },
   "catalog_import_reading": {
     "message": "Lendo arquivo...",
@@ -81,7 +93,17 @@
   },
   "catalog_import_success": {
     "message": "$IMPORTED$ registros importados com sucesso! (Total no catálogo: $TOTAL$)",
-    "description": "Success message when import succeeds"
+    "description": "Success message when import succeeds",
+    "placeholders": {
+      "imported": {
+        "content": "$1",
+        "example": "50"
+      },
+      "total": {
+        "content": "$2",
+        "example": "150"
+      }
+    }
   },
   "catalog_import_fail": {
     "message": "Falha ao importar registros.",
@@ -89,7 +111,13 @@
   },
   "catalog_import_processing_error": {
     "message": "Erro ao processar arquivo JSON: $ERROR$",
-    "description": "Error message when processing import file fails"
+    "description": "Error message when processing import file fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Erro de sintaxe"
+      }
+    }
   },
   "catalog_cleared": {
     "message": "Catálogo local limpo com sucesso.",
@@ -273,14 +301,90 @@
   },
   "skip_countdown": {
     "message": "Próximo vídeo em $SECONDS$s…",
-    "description": "Countdown text in skip overlay"
+    "description": "Countdown text in skip overlay",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   },
   "skip_announcement": {
     "message": "Vídeo já assistido. O próximo vídeo sugerido começa sozinho em $SECONDS$ segundos. Clique ou pressione Escape para assistir de novo; use Tab para marcar nunca pular esse vídeo.",
-    "description": "Screen reader announcement for skip overlay"
+    "description": "Screen reader announcement for skip overlay",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   },
   "history_import_tab_note": {
     "message": "Histórico aberto em nova aba. Acompanhe o progresso no YouTube.",
     "description": "Note about history import in new tab"
+  },
+  "options_description": {
+    "message": "Pula vídeos do YouTube já assistidos, com 5 segundos de tolerância para rever se desejar.",
+    "description": "Description of extension options"
+  },
+  "catalog_title": {
+    "message": "Catálogo Local",
+    "description": "Title for catalog section"
+  },
+  "catalog_description": {
+    "message": "Armazenado com segurança no armazenamento local do navegador (storage.local).",
+    "description": "Description for catalog section"
+  },
+  "catalog_backup_title": {
+    "message": "Backup e Restauração",
+    "description": "Title for catalog backup and restore section"
+  },
+  "catalog_import_choose_file": {
+    "message": "Escolher arquivo JSON...",
+    "description": "Button to select a JSON file for import"
+  },
+  "catalog_import_no_file": {
+    "message": "Nenhum arquivo selecionado",
+    "description": "Text shown when no import file is selected"
+  },
+  "catalog_import_action_btn": {
+    "message": "Importar Arquivo",
+    "description": "Button to perform the import of chosen file"
+  },
+  "history_import_start_btn": {
+    "message": "Importar Histórico",
+    "description": "Button to start importing YouTube history"
+  },
+  "sync_title": {
+    "message": "Sincronização (Firefox Sync)",
+    "description": "Title for Firefox Sync section"
+  },
+  "sync_badge": {
+    "message": "✓ Automático via conta Mozilla",
+    "description": "Badge for active Firefox Sync"
+  },
+  "sync_description": {
+    "message": "Sincroniza seu catálogo de vídeos assistidos entre dispositivos com o Firefox Sync quando conectado à sua conta Mozilla.",
+    "description": "Description for sync section"
+  },
+  "hide_watched_title": {
+    "message": "Preferências de Exibição",
+    "description": "Title for display preferences"
+  },
+  "hide_watched_toggle_label": {
+    "message": "Ocultar vídeos já assistidos",
+    "description": "Label for hide watched toggle"
+  },
+  "hide_watched_description": {
+    "message": "Oculta vídeos já assistidos dos feeds, recomendações e resultados de busca do YouTube.",
+    "description": "Description for hide watched"
+  },
+  "hide_watched_saved": {
+    "message": "Preferência salva.",
+    "description": "Message when setting saved"
+  },
+  "hide_watched_error": {
+    "message": "Erro ao salvar preferência.",
+    "description": "Error message"
   }
 }

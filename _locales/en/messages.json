@@ -28,7 +28,7 @@
     "description": "Title for catalog section"
   },
   "catalog_local_description": {
-    "message": "Stored securely in the browser's local storage ($CODE$storage.local$CODE$).",
+    "message": "Stored securely in the browser's local storage (storage.local).",
     "description": "Description for catalog section"
   },
   "stat_watched": {
@@ -65,11 +65,23 @@
   },
   "catalog_export_success": {
     "message": "Backup exported successfully ($COUNT$ records).",
-    "description": "Success message when export succeeds"
+    "description": "Success message when export succeeds",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "100"
+      }
+    }
   },
   "catalog_export_file_error": {
     "message": "Error generating backup file: $ERROR$",
-    "description": "Error message when generating backup file fails"
+    "description": "Error message when generating backup file fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Permission error"
+      }
+    }
   },
   "catalog_import_reading": {
     "message": "Reading file...",
@@ -81,7 +93,17 @@
   },
   "catalog_import_success": {
     "message": "$IMPORTED$ records imported successfully! (Total in catalog: $TOTAL$)",
-    "description": "Success message when import succeeds"
+    "description": "Success message when import succeeds",
+    "placeholders": {
+      "imported": {
+        "content": "$1",
+        "example": "50"
+      },
+      "total": {
+        "content": "$2",
+        "example": "150"
+      }
+    }
   },
   "catalog_import_fail": {
     "message": "Failed to import records.",
@@ -89,7 +111,13 @@
   },
   "catalog_import_processing_error": {
     "message": "Error processing JSON file: $ERROR$",
-    "description": "Error message when processing import file fails"
+    "description": "Error message when processing import file fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Syntax error"
+      }
+    }
   },
   "catalog_cleared": {
     "message": "Local catalog cleared successfully.",
@@ -273,11 +301,23 @@
   },
   "skip_countdown": {
     "message": "Next video in $SECONDS$s…",
-    "description": "Countdown text in skip overlay"
+    "description": "Countdown text in skip overlay",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   },
   "skip_announcement": {
     "message": "Already watched video. The next suggested video will play automatically in $SECONDS$ seconds. Click or press Escape to watch again; use Tab to mark never skip this video.",
-    "description": "Screen reader announcement for skip overlay"
+    "description": "Screen reader announcement for skip overlay",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   },
   "history_import_tab_note": {
     "message": "History opened in new tab. Track progress on YouTube.",
@@ -292,11 +332,11 @@
     "description": "Label for hide watched toggle"
   },
   "hide_watched_title": {
-    "message": "Search results",
-    "description": "Title for hide watched section"
+    "message": "Display Preferences",
+    "description": "Title for hide watched preference"
   },
   "hide_watched_description": {
-    "message": "Hide videos you've already watched from YouTube search results.",
+    "message": "Hide videos you've already watched from YouTube feeds, recommendations, and search results.",
     "description": "Description for hide watched"
   },
   "hide_watched_saved": {
@@ -306,5 +346,45 @@
   "hide_watched_error": {
     "message": "Error saving.",
     "description": "Error message"
+  },
+  "options_description": {
+    "message": "Skips already-watched YouTube videos, with a 5-second grace period to rewatch if desired.",
+    "description": "Description of extension options"
+  },
+  "catalog_title": {
+    "message": "Local Catalog",
+    "description": "Title for catalog section"
+  },
+  "catalog_description": {
+    "message": "Stored securely in the browser's local storage (storage.local).",
+    "description": "Description for catalog section"
+  },
+  "catalog_backup_title": {
+    "message": "Backup & Restore",
+    "description": "Title for catalog backup and restore section"
+  },
+  "catalog_import_choose_file": {
+    "message": "Choose JSON File...",
+    "description": "Button to select a JSON file for import"
+  },
+  "catalog_import_no_file": {
+    "message": "No file selected",
+    "description": "Text shown when no import file is selected"
+  },
+  "catalog_import_action_btn": {
+    "message": "Import File",
+    "description": "Button to perform the import of chosen file"
+  },
+  "history_import_start_btn": {
+    "message": "Import History",
+    "description": "Button to start importing YouTube history"
+  },
+  "sync_title": {
+    "message": "Firefox Sync",
+    "description": "Title for Firefox Sync section"
+  },
+  "sync_badge": {
+    "message": "✓ Automatic via Mozilla account",
+    "description": "Badge for active Firefox Sync"
   }
 }

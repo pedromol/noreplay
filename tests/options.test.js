@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 
 import { createBackground } from "../lib/background.js";
 import { createFakeBrowser } from "./helpers/fake-browser.js";
@@ -96,4 +98,54 @@ test("admin and options messages are rejected when sent from web page tabs", asy
 
   const exportRes = await browser.runtime.onMessage.fire({ type: "catalog-export" }, webSender);
   assert.deepEqual(exportRes[0], { ok: false, error: "unauthorized" });
+});
+
+test("options HTML has valid i18n keys and required elements in both en and pt_BR", () => {
+  const htmlPath = path.resolve("options/options.html");
+  const html = fs.readFileSync(htmlPath, "utf8");
+
+  const enMessages = JSON.parse(fs.readFileSync(path.resolve("_locales/en/messages.json"), "utf8"));
+  const ptMessages = JSON.parse(fs.readFileSync(path.resolve("_locales/pt_BR/messages.json"), "utf8"));
+
+  // Check required element IDs
+  const requiredIds = [
+    "stat-watched",
+    "stat-never-skip",
+    "export-catalog",
+    "import-catalog-file",
+    "import-catalog-pick",
+    "import-file-name",
+    "import-catalog-submit",
+    "clear-catalog",
+    "catalog-feedback",
+    "history-target",
+    "start-history-import",
+    "history-import-feedback",
+    "hide-watched-toggle",
+    "hide-watched-feedback",
+  ];
+
+  for (const id of requiredIds) {
+    assert.ok(html.includes(`id="${id}"`), `options.html must contain id="${id}"`);
+  }
+
+  // Extract all data-i18n keys
+  const i18nMatches = [...html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(i18nMatches.length > 0, "must have i18n keys in options.html");
+
+  for (const key of i18nMatches) {
+    assert.ok(
+      enMessages[key] && typeof enMessages[key].message === "string" && enMessages[key].message.length > 0,
+      `en messages must contain key "${key}" with non-empty message`
+    );
+    assert.ok(
+      ptMessages[key] && typeof ptMessages[key].message === "string" && ptMessages[key].message.length > 0,
+      `pt_BR messages must contain key "${key}" with non-empty message`
+    );
+  }
+
+  // Ensure import buttons are present with valid labels
+  assert.ok(html.includes('id="start-history-import"'));
+  assert.ok(html.includes('id="import-catalog-submit"'));
+  assert.ok(html.includes('id="import-catalog-pick"'));
 });

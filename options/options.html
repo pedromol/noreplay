@@ -5,237 +5,536 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title></title>
     <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        margin: 24px auto;
-        max-width: 540px;
-        color: #202124;
-        background: #f8f9fa;
-        line-height: 1.5;
-        padding: 0 16px;
+      :root {
+        --bg-page: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-card: #e2e8f0;
+        --border-subtle: #f1f5f9;
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --primary-text: #ffffff;
+        --danger: #dc2626;
+        --danger-hover: #b91c1c;
+        --danger-bg: #fef2f2;
+        --danger-border: #fecaca;
+        --stat-bg: #f8fafc;
+        --stat-border: #e2e8f0;
+        --badge-bg: #ecfdf5;
+        --badge-text: #059669;
+        --badge-border: #a7f3d0;
+        --badge-sync-bg: #eff6ff;
+        --badge-sync-text: #2563eb;
+        --badge-sync-border: #bfdbfe;
+        --input-bg: #ffffff;
+        --input-border: #cbd5e1;
+        --toggle-off: #cbd5e1;
+        --toggle-on: #2563eb;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.07);
       }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-page: #090d16;
+          --bg-card: #131b2e;
+          --text-main: #f8fafc;
+          --text-muted: #94a3b8;
+          --border-card: #1e293b;
+          --border-subtle: #1e293b;
+          --primary: #3b82f6;
+          --primary-hover: #2563eb;
+          --primary-text: #ffffff;
+          --danger: #ef4444;
+          --danger-hover: #dc2626;
+          --danger-bg: #271216;
+          --danger-border: #5c1822;
+          --stat-bg: #0b1120;
+          --stat-border: #1e293b;
+          --badge-bg: #064e3b;
+          --badge-text: #34d399;
+          --badge-border: #047857;
+          --badge-sync-bg: #172554;
+          --badge-sync-text: #60a5fa;
+          --badge-sync-border: #1e3a8a;
+          --input-bg: #0b1120;
+          --input-border: #334155;
+          --toggle-off: #334155;
+          --toggle-on: #3b82f6;
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+          --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 32px auto 64px auto;
+        max-width: 620px;
+        color: var(--text-main);
+        background: var(--bg-page);
+        line-height: 1.5;
+        padding: 0 20px;
+        -webkit-font-smoothing: antialiased;
+      }
+
       header {
         margin-bottom: 24px;
       }
-      h1 {
-        font-size: 1.6em;
-        margin-bottom: 4px;
+
+      .header-title-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
+        margin-bottom: 6px;
       }
-      .badge-offline {
-        display: inline-block;
-        background: #e6f4ea;
-        color: #137333;
+
+      h1 {
+        font-size: 1.65em;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.02em;
+        color: var(--text-main);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         font-weight: 600;
-        font-size: 0.55em;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border: 1px solid #ceead6;
-        vertical-align: middle;
+        font-size: 0.72em;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        line-height: 1.4;
       }
+
+      .badge-offline {
+        background: var(--badge-bg);
+        color: var(--badge-text);
+        border: 1px solid var(--badge-border);
+      }
+
+      .badge-sync {
+        background: var(--badge-sync-bg);
+        color: var(--badge-sync-text);
+        border: 1px solid var(--badge-sync-border);
+      }
+
+      .header-description {
+        font-size: 0.95em;
+        color: var(--text-muted);
+        margin: 0;
+      }
+
       .card {
-        margin-bottom: 16px;
-        padding: 16px 20px;
-        border: 1px solid #dadce0;
-        border-radius: 8px;
-        background: #ffffff;
-        box-shadow: 0 1px 2px rgba(60, 64, 67, 0.05);
+        margin-bottom: 20px;
+        padding: 20px 24px;
+        border: 1px solid var(--border-card);
+        border-radius: 12px;
+        background: var(--bg-card);
+        box-shadow: var(--shadow-card);
       }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+      }
+
       .card h2 {
-        margin-top: 0;
+        margin: 0;
         font-size: 1.15em;
-        color: #202124;
-        margin-bottom: 12px;
+        font-weight: 650;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
       }
+
       .description {
-        font-size: 0.9em;
-        color: #5f6368;
+        font-size: 0.88em;
+        color: var(--text-muted);
         margin-top: 0;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+        line-height: 1.45;
       }
+
+      /* Toggle Row */
+      .preference-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .preference-info {
+        flex: 1;
+      }
+
+      .preference-label {
+        display: block;
+        font-size: 0.96em;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 3px;
+        cursor: pointer;
+      }
+
+      .preference-info .description {
+        margin-bottom: 0;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 26px;
+        flex-shrink: 0;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: var(--toggle-off);
+        transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 26px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #ffffff;
+        transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      input:checked + .slider {
+        background-color: var(--toggle-on);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      input:focus-visible + .slider {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+
+      /* Stats Grid */
       .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
-        margin-bottom: 14px;
+        margin-bottom: 20px;
       }
+
       .stat-item {
-        background: #f1f3f4;
-        padding: 12px;
-        border-radius: 6px;
+        background: var(--stat-bg);
+        border: 1px solid var(--stat-border);
+        padding: 14px;
+        border-radius: 8px;
         text-align: center;
       }
+
       .stat-value {
-        font-size: 1.6em;
-        font-weight: 700;
-        color: #1a73e8;
+        font-size: 1.85em;
+        font-weight: 750;
+        color: var(--primary);
+        line-height: 1.1;
+        margin-bottom: 4px;
       }
+
       .stat-label {
-        font-size: 0.85em;
-        color: #5f6368;
+        font-size: 0.82em;
+        color: var(--text-muted);
+        font-weight: 500;
       }
+
+      /* Form Elements */
       label {
         display: block;
         margin-bottom: 6px;
-        font-size: 0.9em;
-        font-weight: 500;
+        font-size: 0.88em;
+        font-weight: 600;
+        color: var(--text-main);
       }
-      input[type="text"], input[type="email"], input[type="password"], select {
+
+      .select-input {
         width: 100%;
-        padding: 8px 10px;
-        margin-bottom: 10px;
-        border: 1px solid #dadce0;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 0.95em;
-      }
-      input:focus, select:focus {
-        border-color: #1a73e8;
-        outline: none;
-      }
-      button {
-        padding: 8px 14px;
-        border: 1px solid #dadce0;
-        border-radius: 4px;
-        background: #ffffff;
-        color: #3c4043;
+        padding: 9px 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        background: var(--input-bg);
+        color: var(--text-main);
         font-size: 0.9em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.15s, border-color 0.15s;
+        margin-bottom: 12px;
+        outline: none;
+        transition: border-color 0.15s;
       }
-      button:hover {
-        background: #f1f3f4;
-        border-color: #c6c9cc;
+
+      .select-input:focus {
+        border-color: var(--primary);
       }
-      button.primary {
-        background: #1a73e8;
-        color: #ffffff;
-        border-color: #1a73e8;
-      }
-      button.primary:hover {
-        background: #1765cc;
-      }
-      button.danger {
-        background: #fff;
-        color: #d93025;
-        border-color: #f28b82;
-      }
-      button.danger:hover {
-        background: #fce8e6;
-      }
-      .btn-group {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .status {
-        margin-top: 8px;
-        min-height: 1.2em;
-        font-size: 0.85em;
-        color: #3c4043;
-      }
-      .hidden {
-        display: none !important;
-      }
-      .file-input {
-        display: none;
-      }
-      .file-label,
-      label.file-label.button {
+
+      /* Buttons */
+      .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 8px 14px;
-        border: 1px solid #dadce0;
-        border-radius: 4px;
-        background: #ffffff;
-        color: #3c4043;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
         font-size: 0.9em;
-        font-weight: 500;
+        font-weight: 550;
         cursor: pointer;
-        transition: background-color 0.15s, border-color 0.15s;
-        margin-bottom: 0;
+        transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+        text-decoration: none;
+        border: 1px solid transparent;
+        line-height: 1.4;
       }
-      .file-label:hover,
-      label.file-label.button:hover {
-        background: #f1f3f4;
-        border-color: #c6c9cc;
+
+      .btn-primary {
+        background: var(--primary);
+        color: var(--primary-text);
+        border-color: var(--primary);
       }
-      details {
-        margin-bottom: 16px;
-        border: 1px solid #dadce0;
+
+      .btn-primary:hover:not(:disabled) {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: var(--input-bg);
+        color: var(--text-main);
+        border-color: var(--input-border);
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .btn-danger {
+        background: var(--danger-bg);
+        color: var(--danger);
+        border-color: var(--danger-border);
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: var(--danger);
+        color: #ffffff;
+        border-color: var(--danger);
+      }
+
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      /* Backup & Restore Layout */
+      .backup-section {
+        border-top: 1px solid var(--border-card);
+        padding-top: 16px;
+        margin-top: 16px;
+      }
+
+      .sub-title {
+        font-size: 0.96em;
+        font-weight: 650;
+        color: var(--text-main);
+        margin: 0 0 10px 0;
+      }
+
+      .import-flow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        padding: 12px;
         border-radius: 8px;
-        padding: 14px 18px;
-        background: #ffffff;
+        background: var(--stat-bg);
+        border: 1px solid var(--stat-border);
       }
-      summary {
+
+      .file-input {
+        display: none;
+      }
+
+      .file-name-display {
+        font-size: 0.85em;
+        color: var(--text-muted);
+        flex: 1;
+        min-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .file-name-display.has-file {
+        color: var(--primary);
         font-weight: 600;
-        cursor: pointer;
-        font-size: 1.05em;
-        color: #202124;
+      }
+
+      .danger-zone {
+        border-top: 1px solid var(--border-card);
+        padding-top: 16px;
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* Status Feedback */
+      .status {
+        margin-top: 10px;
+        min-height: 1.25em;
+        font-size: 0.85em;
+        font-weight: 500;
+        color: var(--text-muted);
+        transition: opacity 0.2s;
+      }
+
+      .status:not(:empty) {
+        padding: 4px 0;
+      }
+
+      .history-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .history-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
     </style>
   </head>
   <body>
     <header>
-      <h1>
-        <span data-i18n="options_title"></span>
-      </h1>
-      <p class="description" data-i18n="options_description"></p>
+      <div class="header-title-row">
+        <h1 data-i18n="options_title">NoReplay</h1>
+        <span class="badge badge-offline" data-i18n="badge_offline"></span>
+      </div>
+      <p class="header-description" data-i18n="options_description"></p>
     </header>
 
+    <!-- Display Preferences -->
     <section class="card">
-      <h2 data-i18n="catalog_title"></h2>
-      <p class="description" data-i18n="catalog_description"></p>
+      <div class="card-header">
+        <h2 data-i18n="preferences_title"></h2>
+      </div>
+      <div class="preference-row">
+        <div class="preference-info">
+          <label for="hide-watched-toggle" class="preference-label" data-i18n="hide_watched_toggle_label"></label>
+          <p class="description" data-i18n="hide_watched_description"></p>
+        </div>
+        <label class="switch" title="Toggle hide watched videos">
+          <input type="checkbox" id="hide-watched-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="hide-watched-feedback" class="status"></div>
+    </section>
+
+    <!-- YouTube History Import -->
+    <section class="card">
+      <div class="card-header">
+        <h2 data-i18n="history_import_title"></h2>
+      </div>
+      <p class="description" data-i18n="history_import_description"></p>
+      <div class="history-controls">
+        <div>
+          <label for="history-target" data-i18n="history_import_quantity"></label>
+          <select id="history-target" class="select-input">
+            <option value="50" data-i18n="history_import_last_50"></option>
+            <option value="100" selected data-i18n="history_import_last_100"></option>
+            <option value="200" data-i18n="history_import_last_200"></option>
+            <option value="0" data-i18n="history_import_all_until_stop"></option>
+          </select>
+        </div>
+        <div class="history-actions">
+          <button id="start-history-import" type="button" class="btn btn-primary" data-i18n="history_import_btn"></button>
+        </div>
+      </div>
+      <div id="history-import-feedback" class="status"></div>
+    </section>
+
+    <!-- Catalog Management -->
+    <section class="card">
+      <div class="card-header">
+        <h2 data-i18n="catalog_local_title"></h2>
+      </div>
+      <p class="description" data-i18n="catalog_local_description"></p>
+
       <div class="stats-grid">
         <div class="stat-item">
           <div class="stat-value" id="stat-watched">-</div>
           <div class="stat-label" data-i18n="stat_watched"></div>
         </div>
         <div class="stat-item">
-          <div id="stat-never-skip" class="stat-value">0</div>
+          <div class="stat-value" id="stat-never-skip">0</div>
           <div class="stat-label" data-i18n="stat_never_skip"></div>
         </div>
       </div>
-      <div class="btn-group">
-        <button id="export-catalog" data-i18n="catalog_export_btn"></button>
-        <label for="import-catalog-file" class="file-label button" role="button" tabindex="0" data-i18n="catalog_import_btn"></label>
-        <input id="import-catalog-file" class="file-input" type="file" accept="application/json" />
-        <button id="clear-catalog" class="danger" data-i18n="catalog_clear_btn"></button>
+
+      <!-- Backup & Restore -->
+      <div class="backup-section">
+        <h3 class="sub-title" data-i18n="catalog_backup_title"></h3>
+        <div class="btn-group">
+          <button id="export-catalog" type="button" class="btn btn-secondary" data-i18n="catalog_export_btn"></button>
+        </div>
+
+        <div class="import-flow">
+          <input id="import-catalog-file" class="file-input" type="file" accept=".json,application/json" />
+          <button id="import-catalog-pick" type="button" class="btn btn-secondary" data-i18n="catalog_import_choose_file"></button>
+          <span id="import-file-name" class="file-name-display" data-i18n="catalog_import_no_file"></span>
+          <button id="import-catalog-submit" type="button" class="btn btn-primary" disabled data-i18n="catalog_import_action_btn"></button>
+        </div>
+        <div id="catalog-feedback" class="status"></div>
       </div>
-      <div id="catalog-feedback" class="status"></div>
+
+      <!-- Danger Zone -->
+      <div class="danger-zone">
+        <button id="clear-catalog" type="button" class="btn btn-danger" data-i18n="catalog_clear_btn"></button>
+      </div>
     </section>
 
+    <!-- Firefox Sync Info -->
     <section class="card">
-      <h2 data-i18n="sync_title"></h2>
-      <p class="description" data-i18n="sync_description"></p>
-    </section>
-
-    <section class="card">
-      <h2 data-i18n="history_import_title"></h2>
-      <p class="description" data-i18n="history_import_description"></p>
-      <div class="btn-group">
-        <button id="start-history-import" data-i18n="history_import_start_btn"></button>
+      <div class="card-header">
+        <h2 data-i18n="sync_title"></h2>
+        <span class="badge badge-sync" data-i18n="sync_badge"></span>
       </div>
-      <div id="history-import-feedback" class="status"></div>
+      <p class="description" style="margin-bottom: 0;" data-i18n="sync_description"></p>
     </section>
-
-    <details>
-      <summary data-i18n="hide_watched_title"></summary>
-      <div style="margin-top: 12px;">
-        <p class="description" data-i18n="hide_watched_description"></p>
-        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-          <input type="checkbox" id="hide-watched-toggle" style="width: auto; margin: 0;" />
-          <span data-i18n="hide_watched_toggle_label"></span>
-        </label>
-        <div id="hide-watched-feedback" class="status"></div>
-      </div>
-    </details>
 
     <script type="module" src="options.js"></script>
   </body>

@@ -19,8 +19,8 @@ function getMsg(key, substitutions) {
   return "";
 }
 
-function t(key) {
-  return getMsg(key);
+function t(key, substitutions) {
+  return getMsg(key, substitutions);
 }
 
 function localize() {
@@ -29,15 +29,6 @@ function localize() {
     if (!key) return;
     const msg = t(key);
     if (msg) el.textContent = msg;
-  });
-  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-html");
-    if (!key) return;
-    let msg = t(key);
-    if (msg) {
-      msg = msg.replace(/\$CODE\$/g, "<code>").replace(/\$\/CODE\$/g, "</code>");
-      el.innerHTML = msg;
-    }
   });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => {
     const key = el.getAttribute("data-i18n-title");
@@ -50,36 +41,6 @@ function localize() {
     if (!key) return;
     const msg = t(key);
     if (msg) el.setAttribute("placeholder", msg);
-  });
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-  const nodes = [];
-  let node;
-  while ((node = walker.nextNode())) {
-    nodes.push(node);
-  }
-  for (const textNode of nodes) {
-    const original = textNode.nodeValue;
-    if (!original || !original.includes("__MSG_")) continue;
-    let replaced = original.replace(/__MSG_([A-Za-z0-9_]+)__/g, (match, key) => {
-      const msg = t(key);
-      return msg || match;
-    });
-    if (replaced !== original) {
-      textNode.nodeValue = replaced;
-    }
-  }
-  document.querySelectorAll("*").forEach((el) => {
-    for (const attr of Array.from(el.attributes)) {
-      if (attr.value && attr.value.includes("__MSG_")) {
-        let replaced = attr.value.replace(/__MSG_([A-Za-z0-9_]+)__/g, (match, key) => {
-          const msg = t(key);
-          return msg || match;
-        });
-        if (replaced !== attr.value) {
-          el.setAttribute(attr.name, replaced);
-        }
-      }
-    }
   });
   const title = t("options_title");
   if (title) document.title = title;
@@ -222,15 +183,17 @@ async function setupHideWatched() {
   });
 }
 
-async function startHistoryImport() {
+export async function startHistoryImport() {
+  const targetSelect = byId("history-target");
+  const targetCount = targetSelect ? parseInt(targetSelect.value, 10) : 100;
   const feedback = byId("history-import-feedback");
-  if (feedback) setText("history-import-feedback", t("history_import_starting") || "Opening history...");
-  const res = await send({ type: "start-history-import" });
+  if (feedback) setText("history-import-feedback", t("history_import_opening") || "Opening history...");
+  const res = await send({ type: "start-history-import", targetCount });
   if (res && res.ok) {
-    if (feedback) setText("history-import-feedback", t("history_import_opened") || "Opened YouTube History tab. Import will run automatically.");
+    if (feedback) setText("history-import-feedback", t("history_import_opened") || "Opened YouTube History tab. Track progress on YouTube.");
     setTimeout(() => {
       if (feedback) setText("history-import-feedback", "");
-    }, 3000);
+    }, 4000);
   } else {
     if (feedback) setText("history-import-feedback", t("history_import_error") || "Error starting import.");
   }
@@ -244,14 +207,50 @@ async function init() {
   const exportBtn = byId("export-catalog");
   if (exportBtn) exportBtn.addEventListener("click", exportCatalogBackup);
 
+  let selectedImportFile = null;
   const importInput = byId("import-catalog-file");
-  if (importInput) {
-    importInput.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
+  const pickBtn = byId("import-catalog-pick");
+  const fileNameEl = byId("import-file-name");
+  const submitBtn = byId("import-catalog-submit");
+
+  function setFile(file) {
+    selectedImportFile = file || null;
+    if (fileNameEl) {
       if (file) {
-        await handleCatalogImportFile(file);
+        fileNameEl.textContent = "📄 " + file.name;
+        fileNameEl.classList.add("has-file");
+      } else {
+        fileNameEl.textContent = t("catalog_import_no_file") || "No file selected";
+        fileNameEl.classList.remove("has-file");
       }
-      importInput.value = "";
+    }
+    if (submitBtn) {
+      submitBtn.disabled = !file;
+    }
+  }
+
+  if (pickBtn && importInput) {
+    pickBtn.addEventListener("click", () => importInput.click());
+  }
+
+  if (importInput) {
+    importInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      setFile(file);
+    });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", async () => {
+      if (!selectedImportFile && importInput) {
+        importInput.click();
+        return;
+      }
+      if (selectedImportFile) {
+        await handleCatalogImportFile(selectedImportFile);
+        if (importInput) importInput.value = "";
+        setFile(null);
+      }
     });
   }
 
