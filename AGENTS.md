@@ -16,6 +16,7 @@ npm test                 # Run node:test test suite
 npm run lint             # Run ESLint across extension files
 npm run lint:manifest    # Validate Manifest V3 via web-ext lint
 npm run build            # Package extension via web-ext build
+npm run sign             # Bump patch (+0.0.1) and sign via web-ext sign
 npx web-ext run          # Launch extension in a clean Firefox profile
 ```
 

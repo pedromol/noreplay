@@ -7,8 +7,11 @@
   "scripts": {
     "test": "node --test tests/",
     "lint": "eslint .",
-    "lint:manifest": "web-ext lint",
-    "build": "web-ext build --overwrite-dest --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md' 'docs' 'docs/**' 'AGENTS.md' 'build.sh'"
+    "lint:manifest": "web-ext lint --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md' 'docs' 'docs/**' 'AGENTS.md' 'build.sh' 'scripts' 'scripts/**'",
+    "build": "web-ext build --overwrite-dest --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md' 'docs' 'docs/**' 'AGENTS.md' 'build.sh' 'scripts' 'scripts/**'",
+    "bump:patch": "node scripts/bump-version.js",
+    "sign": "node scripts/bump-version.js && web-ext sign --artifacts-dir=./web-ext-artifacts --channel=unlisted --api-key=\"$AMO_JWT_ISSUER\" --api-secret=\"$AMO_JWT_SECRET\" --ignore-files 'tests' 'tests/**' 'eslint.config.js' 'package.json' 'package-lock.json' 'README.md' 'docs' 'docs/**' 'AGENTS.md' 'build.sh' 'scripts' 'scripts/**'",
+    "build:sign": "npm run sign"
   },
   "devDependencies": {
     "eslint": "^9.13.0",

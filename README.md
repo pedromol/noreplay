@@ -37,6 +37,7 @@ npm test             # Run unit tests (node --test tests/)
 npm run lint         # Run ESLint
 npm run lint:manifest  # Validate Manifest V3 via web-ext lint
 npm run build        # Build extension package via web-ext build
+npm run sign         # Bump patch (+0.0.1) and sign via web-ext sign
 ```
 
 ### Running Locally in Firefox
