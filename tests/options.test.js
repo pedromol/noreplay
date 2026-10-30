@@ -149,3 +149,29 @@ test("options HTML has valid i18n keys and required elements in both en and pt_B
   assert.ok(html.includes('id="import-catalog-submit"'));
   assert.ok(html.includes('id="import-catalog-pick"'));
 });
+
+test("all locale messages are symmetric and contain required banner keys", () => {
+  const enMessages = JSON.parse(fs.readFileSync(path.resolve("_locales/en/messages.json"), "utf8"));
+  const ptMessages = JSON.parse(fs.readFileSync(path.resolve("_locales/pt_BR/messages.json"), "utf8"));
+
+  const enKeys = Object.keys(enMessages).sort();
+  const ptKeys = Object.keys(ptMessages).sort();
+
+  assert.deepEqual(enKeys, ptKeys, "locale message keys between en and pt_BR must match exactly");
+
+  const historyBannerKeys = [
+    "history_banner_starting",
+    "history_banner_stop_btn",
+    "history_banner_stopping",
+    "history_banner_target_all",
+    "history_banner_progress",
+    "history_banner_empty",
+    "history_banner_finished",
+    "history_banner_close_tab_btn",
+  ];
+
+  for (const key of historyBannerKeys) {
+    assert.ok(enMessages[key]?.message, `en messages must have ${key}`);
+    assert.ok(ptMessages[key]?.message, `pt_BR messages must have ${key}`);
+  }
+});

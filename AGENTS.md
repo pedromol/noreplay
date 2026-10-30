@@ -47,6 +47,7 @@ npx web-ext run          # Launch extension in a clean Firefox profile
 
 ## Development & Review Rules
 
+- **Main Branch**: Always work directly on the `main` branch unless explicitly instructed to create or use another branch.
 - **Preserve Existing Documentation**: Keep existing comments, tests, and plan documents (`docs/plans/`) intact.
 - **Verification Before Commit**: Never commit without running `npm test`, `npm run lint`, and `npm run lint:manifest`.
 - **Conventional Commits**: Format commit messages as `type(scope): description`, e.g., `feat: ...`, `fix: ...`, `chore: ...`, `docs: ...`.

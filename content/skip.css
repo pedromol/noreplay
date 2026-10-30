@@ -73,3 +73,14 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* TV player roots are not guaranteed to establish a containing block for
+   absolutely positioned children, so the overlay marks its host. */
+.noreplay-skip-host {
+  position: relative;
+}
+
+.noreplay-skip-host.noreplay-skip-overlay {
+  width: 100%;
+  height: 100%;
+}

@@ -172,3 +172,84 @@ test("tab removal forgets per-tab navigation state", async () => {
 
   assert.equal(background.navigation.current(5), null);
 });
+
+test("extracts the video id from a youtube tv hash route", () => {
+  assert.equal(extractVideoId("https://www.youtube.com/tv#/watch?v=abc123"), "abc123");
+  assert.equal(
+    extractVideoId("https://www.youtube.com/tv#/watch?v=abc123&list=PL999"),
+    "abc123"
+  );
+  assert.equal(extractVideoId("https://www.youtube.com/tv/#!/watch?v=abc123"), "abc123");
+  assert.equal(extractVideoId("https://www.youtube.com/tv#/shorts/abc123"), "abc123");
+});
+
+test("ignores youtube tv pages without a video in the hash", () => {
+  assert.equal(extractVideoId("https://www.youtube.com/tv"), null);
+  assert.equal(extractVideoId("https://www.youtube.com/tv#/"), null);
+  assert.equal(extractVideoId("https://www.youtube.com/tv#/watch"), null);
+  assert.equal(extractVideoId("https://www.youtube.com/tv#/browse"), null);
+});
+
+test("a youtube tv page is not treated as history", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  browser.setTab(7, { url: "https://www.youtube.com/tv#/watch?v=abc123" });
+
+  const background = createBackground({ browser, now: () => 1000 });
+  await background.onRuntimeMessage(
+    { type: "playback", deltaSeconds: 30, duration: 200 },
+    { tab: { id: 7 } }
+  );
+
+  const record = await background.catalog.get("abc123");
+  assert.equal(record.watched, true);
+});
+
+test("youtube tv hash navigation fires the video change once", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+
+  const events = [];
+  const controller = createNavigationController({ onVideoChange: (event) => events.push(event) });
+
+  controller.observe(1, "https://www.youtube.com/tv");
+  controller.observe(1, "https://www.youtube.com/tv#/watch?v=abc123");
+  controller.observe(1, "https://www.youtube.com/tv#/watch?v=abc123");
+  controller.observe(1, "https://www.youtube.com/tv#/watch?v=xyz789");
+
+  assert.deepEqual(events, [
+    { tabId: 1, videoId: "abc123" },
+    { tabId: 1, videoId: "xyz789" },
+  ]);
+});
+
+test("a tv history event with no video in its url keeps the tab on the current video", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  browser.setTab(3, { url: "https://www.youtube.com/tv#/watch?v=abc123" });
+
+  const background = createBackground({ browser });
+  await browser.webNavigation.onHistoryStateUpdated.fire({
+    tabId: 3,
+    frameId: 0,
+    url: "https://www.youtube.com/tv#/",
+  });
+
+  assert.equal(background.navigation.current(3), "abc123");
+});
+
+test("a non-tv history event still forgets the tab video", async () => {
+  const browser = createFakeBrowser();
+  browser.storage.local = createMemoryStorage();
+  browser.setTab(3, { url: "https://www.youtube.com/" });
+
+  const background = createBackground({ browser });
+  background.navigation.observe(3, "https://www.youtube.com/watch?v=abc123");
+  await browser.webNavigation.onHistoryStateUpdated.fire({
+    tabId: 3,
+    frameId: 0,
+    url: "https://www.youtube.com/feed/subscriptions",
+  });
+
+  assert.equal(background.navigation.current(3), null);
+});
