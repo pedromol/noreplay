@@ -386,5 +386,53 @@
   "hide_watched_error": {
     "message": "Erro ao salvar preferência.",
     "description": "Error message"
+  },
+  "history_banner_starting": {
+    "message": "Iniciando importação...",
+    "description": "Mensagem inicial de status no banner de importação do histórico"
+  },
+  "history_banner_stop_btn": {
+    "message": "Parar e salvar",
+    "description": "Botão para parar a importação do histórico e salvar vídeos coletados"
+  },
+  "history_banner_stopping": {
+    "message": "Finalizando...",
+    "description": "Estado do botão ao finalizar importação do histórico"
+  },
+  "history_banner_target_all": {
+    "message": "todos",
+    "description": "Texto representando todos os vídeos no status de progresso"
+  },
+  "history_banner_progress": {
+    "message": "Coletados: $COUNT$ de $TARGET$ vídeos...",
+    "description": "Mensagem de progresso no banner de importação do histórico",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      },
+      "target": {
+        "content": "$2",
+        "example": "100"
+      }
+    }
+  },
+  "history_banner_empty": {
+    "message": "Nenhum vídeo encontrado. Verifique se você está conectado à sua conta do YouTube.",
+    "description": "Mensagem quando nenhum vídeo é encontrado na página de histórico"
+  },
+  "history_banner_finished": {
+    "message": "Importação concluída! Total de $TOTAL$ vídeos importados.",
+    "description": "Mensagem quando a importação do histórico é concluída",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "history_banner_close_tab_btn": {
+    "message": "Fechar aba",
+    "description": "Botão para fechar a aba de importação do histórico"
   }
 }

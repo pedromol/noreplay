@@ -386,5 +386,53 @@
   "sync_badge": {
     "message": "✓ Automatic via Mozilla account",
     "description": "Badge for active Firefox Sync"
+  },
+  "history_banner_starting": {
+    "message": "Starting import...",
+    "description": "Initial status message in history import banner"
+  },
+  "history_banner_stop_btn": {
+    "message": "Stop and save",
+    "description": "Button to stop history import and save collected videos"
+  },
+  "history_banner_stopping": {
+    "message": "Finishing...",
+    "description": "Button state when stopping history import"
+  },
+  "history_banner_target_all": {
+    "message": "all",
+    "description": "Text representing all videos in progress status"
+  },
+  "history_banner_progress": {
+    "message": "Collected: $COUNT$ of $TARGET$ videos...",
+    "description": "Progress message in history import banner",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      },
+      "target": {
+        "content": "$2",
+        "example": "100"
+      }
+    }
+  },
+  "history_banner_empty": {
+    "message": "No videos found. Check if you are signed in to your YouTube account.",
+    "description": "Message when no videos are found on history page"
+  },
+  "history_banner_finished": {
+    "message": "Import completed! Total of $TOTAL$ videos imported.",
+    "description": "Message when history import is completed",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "history_banner_close_tab_btn": {
+    "message": "Close tab",
+    "description": "Button to close the history import tab"
   }
 }

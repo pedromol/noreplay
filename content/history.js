@@ -8,6 +8,16 @@
   const INITIAL_TIMEOUT_MS = 30000;
   const VIDEO_ID_REGEX = /^[A-Za-z0-9_-]{11}$/;
 
+  function gm(key, subs) {
+    try {
+      if (browserApi && browserApi.i18n && typeof browserApi.i18n.getMessage === "function") {
+        const m = browserApi.i18n.getMessage(key, subs);
+        if (m) return m;
+      }
+    } catch {}
+    return "";
+  }
+
   function extractIdFromHref(href) {
     if (!href || typeof href !== "string") return null;
     try {
@@ -70,13 +80,29 @@
   function createBanner() {
     const banner = document.createElement("div");
     banner.id = "noreplay-history-banner";
-    banner.innerHTML = `
-      <h3>NoReplay</h3>
-      <div class="noreplay-status" id="noreplay-status-text">Iniciando importação...</div>
-      <div id="noreplay-actions">
-        <button type="button" class="noreplay-btn" id="noreplay-stop-btn">Parar e salvar</button>
-      </div>
-    `;
+
+    const title = document.createElement("h3");
+    title.textContent = "NoReplay";
+
+    const statusText = document.createElement("div");
+    statusText.className = "noreplay-status";
+    statusText.id = "noreplay-status-text";
+    statusText.textContent = gm("history_banner_starting") || "Starting import...";
+
+    const actions = document.createElement("div");
+    actions.id = "noreplay-actions";
+
+    const stopBtn = document.createElement("button");
+    stopBtn.type = "button";
+    stopBtn.className = "noreplay-btn";
+    stopBtn.id = "noreplay-stop-btn";
+    stopBtn.textContent = gm("history_banner_stop_btn") || "Stop and save";
+
+    actions.appendChild(stopBtn);
+    banner.appendChild(title);
+    banner.appendChild(statusText);
+    banner.appendChild(actions);
+
     (document.body || document.documentElement).appendChild(banner);
     return banner;
   }
@@ -105,21 +131,35 @@
     let initialTimer = null;
 
     function renderProgress() {
-      const targetStr = target > 0 ? String(target) : "todos";
-      statusText.textContent = `Coletados: ${seenIds.size} de ${targetStr} vídeos...`;
+      const allText = gm("history_banner_target_all") || "all";
+      const targetStr = target > 0 ? String(target) : allText;
+      let msg = gm("history_banner_progress", [String(seenIds.size), targetStr]);
+      if (!msg) {
+        msg = `Collected: ${seenIds.size} of ${targetStr} videos...`;
+      }
+      statusText.textContent = msg;
+    }
+
+    function createCloseTabButton(isSecondary = false) {
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = isSecondary
+        ? "noreplay-btn noreplay-btn-secondary"
+        : "noreplay-btn";
+      closeBtn.id = "noreplay-close-tab-btn";
+      closeBtn.textContent = gm("history_banner_close_tab_btn") || "Close tab";
+      closeBtn.addEventListener("click", () => {
+        browserApi.runtime.sendMessage({ type: "close-tab" }).catch(() => {});
+      });
+      return closeBtn;
     }
 
     function renderEmptyAlert() {
-      statusText.textContent = "Nenhum vídeo encontrado. Verifique se você está conectado à sua conta do YouTube.";
-      actionsContainer.innerHTML = `
-        <button type="button" class="noreplay-btn noreplay-btn-secondary" id="noreplay-close-tab-btn">Fechar aba</button>
-      `;
-      const closeBtn = banner.querySelector("#noreplay-close-tab-btn");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          browserApi.runtime.sendMessage({ type: "close-tab" }).catch(() => {});
-        });
-      }
+      statusText.textContent =
+        gm("history_banner_empty") ||
+        "No videos found. Check if you are signed in to your YouTube account.";
+      actionsContainer.textContent = "";
+      actionsContainer.appendChild(createCloseTabButton(true));
     }
 
     function renderFinished(total) {
@@ -127,22 +167,19 @@
         renderEmptyAlert();
         return;
       }
-      statusText.textContent = `Importação concluída! Total de ${total} vídeos importados.`;
-      actionsContainer.innerHTML = `
-        <button type="button" class="noreplay-btn" id="noreplay-close-tab-btn">Fechar aba</button>
-      `;
-      const closeBtn = banner.querySelector("#noreplay-close-tab-btn");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          browserApi.runtime.sendMessage({ type: "close-tab" }).catch(() => {});
-        });
+      let msg = gm("history_banner_finished", [String(total)]);
+      if (!msg) {
+        msg = `Import completed! Total of ${total} videos imported.`;
       }
+      statusText.textContent = msg;
+      actionsContainer.textContent = "";
+      actionsContainer.appendChild(createCloseTabButton(false));
     }
 
     stopBtn.addEventListener("click", () => {
       isStopped = true;
       stopBtn.disabled = true;
-      stopBtn.textContent = "Finalizando...";
+      stopBtn.textContent = gm("history_banner_stopping") || "Finishing...";
     });
 
     initialTimer = setTimeout(async () => {
