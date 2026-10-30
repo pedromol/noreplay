@@ -28,6 +28,7 @@ Firefox MV3 extension that skips already-watched YouTube videos upon opening, of
 - **Hide Watched Videos**: Optional display preference to automatically hide watched videos and shelves from YouTube feeds and search results.
 - **YouTube History Import**: One-click import directly reads your YouTube history page in the browser and batches items into your catalog.
 - **YouTube Shorts Support**: Works on both regular `/watch?v=` videos and `/shorts/<id>`.
+- **YouTube TV Support**: On the leanback app (`youtube.com/tv`), the video id is read from the `#/watch?v=` fragment and the overlay is mounted on the TV player root. Watch and Shorts pages behave exactly as before.
 
 ## Development
 

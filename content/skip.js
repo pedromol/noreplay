@@ -1,6 +1,9 @@
 (() => {
   const NEXT_BUTTON_SELECTOR = ".ytp-next-button";
   const PLAYER_SELECTOR = "#movie_player";
+  const TV_PLAYER_SELECTORS = ["ytlr-player", "#player", "ytlr-watch-player"];
+  // Marks both the overlay and the host it is appended to; see skip.css.
+  const HOST_CLASS = "noreplay-skip-host";
   const MAX_HOST_RETRIES = 20;
   const HOST_RETRY_MS = 250;
 
@@ -13,6 +16,9 @@
   let hostRetryTimer = null;
   let dismissedVideoId = null;
   let stateEpoch = 0;
+  let positionedHost = null;
+  let mountedHost = null;
+  let mountedTogether = false;
 
   function createSession() {
     const timer = {
@@ -33,11 +39,48 @@
 
   const session = createSession();
 
+  function isPositioned(element) {
+    const style = window.getComputedStyle(element);
+    return Boolean(style && style.position && style.position !== "static");
+  }
+
+  function tvPlayerHost() {
+    for (const selector of TV_PLAYER_SELECTORS) {
+      const player = document.querySelector(selector);
+      if (player) return player;
+    }
+    return null;
+  }
+
   function playerHost() {
     const player = document.querySelector(PLAYER_SELECTOR);
     if (player) return player;
+    const tvPlayer = tvPlayerHost();
+    if (tvPlayer) return tvPlayer;
     const video = document.querySelector("video");
     return video ? video.parentElement : null;
+  }
+
+  // The overlay is position: absolute with inset: 0, so it fills its nearest
+  // positioned ancestor. The classic player is positioned; the TV player root
+  // is not guaranteed to be, so mark it (and the overlay) when it is not.
+  function mountOverlay(host, element) {
+    const markTogether = !isPositioned(host);
+    host.appendChild(element);
+    element.classList.add(HOST_CLASS);
+    if (markTogether) host.classList.add(HOST_CLASS);
+    mountedHost = host;
+    positionedHost = markTogether ? host : null;
+    mountedTogether = markTogether;
+  }
+
+  function unmountOverlay(element) {
+    if (element && element.parentNode) element.parentNode.removeChild(element);
+    if (positionedHost) positionedHost.classList.remove(HOST_CLASS);
+    if (mountedHost && !mountedTogether) mountedHost.classList.remove(HOST_CLASS);
+    positionedHost = null;
+    mountedHost = null;
+    mountedTogether = false;
   }
 
   function ensureLiveRegion() {
@@ -171,10 +214,8 @@
   function dismissPopup() {
     clearHostRetry();
     session.close();
-    if (overlay) {
-      overlay.remove();
-      overlay = null;
-    }
+    unmountOverlay(overlay);
+    overlay = null;
     countEl = null;
   }
 
@@ -186,8 +227,8 @@
   }
 
   function onCountdownExpired() {
-    const next = document.querySelector(NEXT_BUTTON_SELECTOR);
     dismissPopup();
+    const next = document.querySelector(NEXT_BUTTON_SELECTOR);
     if (next && typeof next.click === "function") {
       next.click();
     }
@@ -218,7 +259,7 @@
     clearHostRetry();
     dismissPopup();
     overlay = buildOverlay();
-    host.appendChild(overlay);
+    mountOverlay(host, overlay);
     if (!session.open(videoId)) {
       dismissPopup();
       return;
@@ -285,10 +326,26 @@
     },
     true
   );
+  // Fires again when the watch state is refreshed; a fresh server state must
+  // be able to re-raise the overlay after an exception, without a remount.
   window.addEventListener(
     "yt-page-data-updated",
     () => {
       stateEpoch += 1;
+      dismissedVideoId = null;
+      requestState();
+    },
+    true
+  );
+  // The TV shell routes videos through location.hash and may not emit the
+  // classic navigation events bumping stateEpoch, so an in-flight request for
+  // the previous video could otherwise apply here. Bumping the epoch drops it;
+  // showPopup replaces any existing overlay for the same id.
+  window.addEventListener(
+    "hashchange",
+    () => {
+      stateEpoch += 1;
+      dismissedVideoId = null;
       requestState();
     },
     true
